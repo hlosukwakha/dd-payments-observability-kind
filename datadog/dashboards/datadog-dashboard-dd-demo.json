@@ -1,1 +1,1538 @@
-{"title":"DD Demo – Mission Control","description":"Demo dashboard for payments + fraud + jira + auth + RUM + AI + Kubernetes. Uses template variables for env/cluster/service/bank/version. Metric names are partly dummy; adjust to match your account.","widgets":[{"id":439710100806767,"definition":{"type":"note","content":"***Section A*** — Payments domain\nKPIs for created/settled/failed payments, failure reasons, and settlement latency.\nFilters: env/cluster/service/bank/version.","background_color":"blue","font_size":"14","text_align":"left","show_tick":true},"layout":{"x":0,"y":0,"width":4,"height":2}},{"id":3575101739082570,"definition":{"title":"Payments created (count)","type":"query_value","requests":[{"response_format":"scalar","queries":[{"data_source":"metrics","name":"query1","query":"sum:payment.created{$env, $service, $bank}.as_count()","aggregator":"sum"}],"formulas":[{"formula":"query1","number_format":{"unit":{"type":"canonical_unit","unit_name":"euro"}}}],"conditional_formats":[{"comparator":">=","value":10000,"palette":"custom_bg","custom_bg_color":"#632ca6"},{"comparator":"<","value":10000,"palette":"white_on_green"}]}],"autoscale":true,"precision":0},"layout":{"x":4,"y":0,"width":4,"height":2}},{"id":6508457455660514,"definition":{"title":"Payments settled (count)","type":"query_value","requests":[{"response_format":"scalar","queries":[{"data_source":"metrics","name":"query1","query":"sum:payment.settled{$env, $service, $bank}.as_count()","aggregator":"sum"}],"formulas":[{"formula":"query1","number_format":{"unit":{"type":"canonical_unit","unit_name":"euro"}}}],"conditional_formats":[{"comparator":">=","value":500,"palette":"white_on_green"},{"comparator":"<","value":500,"palette":"white_on_yellow"}]}],"autoscale":true,"precision":0,"timeseries_background":{"type":"bars","yaxis":{}}},"layout":{"x":8,"y":0,"width":4,"height":2}},{"id":7542456689394755,"definition":{"title":"% Settled over Created","type":"query_value","requests":[{"response_format":"scalar","queries":[{"data_source":"metrics","name":"query1","query":"sum:payment.settled{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}.as_count()","aggregator":"avg"},{"data_source":"metrics","name":"query2","query":"sum:payment.created{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}.as_count()","aggregator":"avg"}],"formulas":[{"formula":"100 * (query1 / query2)","number_format":{"unit":{"type":"canonical_unit","unit_name":"percent"}}}],"conditional_formats":[{"comparator":">","value":85,"palette":"white_on_green"},{"comparator":">=","value":75,"palette":"white_on_yellow"},{"comparator":"<","value":75,"palette":"white_on_red"}]}],"autoscale":true,"precision":2},"layout":{"x":0,"y":2,"width":4,"height":2}},{"id":7556219368820818,"definition":{"title":"Failed payments by reason","requests":[{"queries":[{"name":"query1","data_source":"metrics","query":"sum:payment.failed{$env, $service} by {reason}.as_count()","aggregator":"sum"}],"response_format":"scalar","style":{"palette":"datadog16"},"formulas":[{"formula":"query1"}],"sort":{"count":500,"order_by":[{"type":"formula","index":0,"order":"desc"}]}}],"type":"sunburst","legend":{"type":"inline"}},"layout":{"x":4,"y":2,"width":4,"height":2}},{"id":5171449088422110,"definition":{"title":"Failed payments by reason","show_legend":true,"legend_layout":"auto","legend_columns":["avg","min","max","value","sum"],"type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"name":"query1","data_source":"metrics","query":"sum:payment.failed{$env, $service} by {reason}.as_count()"}],"formulas":[{"formula":"query1"}],"style":{"palette":"dog_classic","order_by":"values","line_type":"solid","line_width":"normal"},"display_type":"line"}]},"layout":{"x":8,"y":2,"width":4,"height":2}},{"id":8549449642931678,"definition":{"title":"Failed payments by reason (Top List)","type":"toplist","requests":[{"response_format":"scalar","queries":[{"data_source":"metrics","name":"query1","query":"sum:payment.failed{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version} by {reason}.as_count()","aggregator":"sum"}],"conditional_formats":[{"comparator":">","value":8,"palette":"white_on_red"},{"comparator":">=","value":6,"palette":"white_on_yellow"},{"comparator":"<=","value":5,"palette":"white_on_green"}],"formulas":[{"formula":"query1"}],"sort":{"count":10,"order_by":[{"type":"formula","index":0,"order":"desc"}]}}],"style":{}},"layout":{"x":0,"y":4,"width":4,"height":2}},{"id":1454806870608597,"definition":{"title":"% failed over created per minute (time series)","show_legend":true,"legend_layout":"auto","legend_columns":["avg","min","max","value","sum"],"type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"sum:payment.failed{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}.rollup(sum, 60).as_count()"},{"data_source":"metrics","name":"query2","query":"sum:payment.created{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}.rollup(sum, 60).as_count()"}],"formulas":[{"alias":"percent_failed","formula":"100 * (query1 / query2)"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"}]},"layout":{"x":4,"y":4,"width":4,"height":2}},{"id":6156088206568160,"definition":{"title":"Failed payments by reason over time","show_legend":true,"legend_layout":"auto","legend_columns":["avg","min","max","value","sum"],"type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"sum:payment.failed{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version} by {reason}.as_count()"}],"formulas":[{"formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"}]},"layout":{"x":8,"y":4,"width":4,"height":2}},{"id":4800085671411160,"definition":{"title":"Payment settlement latency (p50/p95 ms)","show_legend":true,"legend_layout":"auto","legend_columns":["avg","min","max","value","sum"],"type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"avg:payment.settlement_latency_ms.max{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}"}],"formulas":[{"formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"},{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"avg:payment.settlement_latency_ms.median{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}"}],"formulas":[{"formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"}]},"layout":{"x":0,"y":6,"width":4,"height":2}},{"id":4949731103174728,"definition":{"type":"note","content":"***Section B*** — Fraud domain\nSuspected fraud signals and outcomes.\nFilters: env/cluster/bank/version.","background_color":"blue","font_size":"14","text_align":"left","show_tick":true},"layout":{"x":4,"y":6,"width":4,"height":2}},{"id":7136910118884304,"definition":{"title":"Fraud Checks","show_legend":true,"legend_layout":"auto","legend_columns":["avg","min","max","value","sum"],"type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"name":"query1","data_source":"metrics","query":"sum:fraud.check.rejected{$env, $service} by {service}.as_count()"},{"name":"query2","data_source":"metrics","query":"sum:fraud.check.approved{$env, $service} by {service}.as_count()"}],"formulas":[{"alias":"fraud_check_rejected","formula":"query1"},{"alias":"fraud_check_approved","formula":"query2"}],"style":{"palette":"dog_classic","order_by":"values","line_type":"solid","line_width":"normal"},"display_type":"line"}]},"layout":{"x":8,"y":6,"width":4,"height":2}},{"id":8244999496164757,"definition":{"title":"Total suspected fraud over time","show_legend":true,"legend_layout":"auto","legend_columns":["avg","min","max","value","sum"],"type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"sum:payment.failed{$env AND $service AND reason:fraud_detected OR reason:suspected_fraud}.as_count()"}],"formulas":[{"formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"}]},"layout":{"x":0,"y":8,"width":4,"height":2}},{"id":6149188380032365,"definition":{"title":"% suspected fraud cleared (not fraudulent)","type":"query_value","requests":[{"response_format":"scalar","queries":[{"data_source":"metrics","name":"query1","query":"sum:fraud.cleared{env:$env,kube_cluster_name:$cluster,service:fraud-service,bank:$bank,version:$version}","aggregator":"avg"},{"data_source":"metrics","name":"query2","query":"sum:fraud.suspected{env:$env,kube_cluster_name:$cluster,service:fraud-service,bank:$bank,version:$version}","aggregator":"avg"}],"formulas":[{"formula":"100 * (query1 / query2)"}]}],"autoscale":true,"precision":2},"layout":{"x":4,"y":8,"width":4,"height":2}},{"id":5420709352354726,"definition":{"type":"note","content":"***Section C*** — Authentication domain\nAuth outcomes (success/failure) and latency.\nFilters: env/cluster/service/version.","background_color":"blue","font_size":"14","text_align":"left","show_tick":true},"layout":{"x":8,"y":8,"width":4,"height":2}},{"id":6033387144135756,"definition":{"title":"Authentication outcomes by reason (failures)","requests":[{"queries":[{"name":"query1","data_source":"metrics","query":"sum:auth.failed{$env, $service} by {reason}.as_count()","aggregator":"sum"}],"response_format":"scalar","style":{"palette":"datadog16"},"formulas":[{"formula":"query1"}],"sort":{"order_by":[{"type":"formula","index":0,"order":"desc"}]}}],"type":"sunburst","legend":{"type":"automatic"}},"layout":{"x":0,"y":10,"width":4,"height":2}},{"id":7444345585578279,"definition":{"title":"Authentication outcomes by reason (failures)","show_legend":false,"type":"timeseries","requests":[{"formulas":[{"style":{"palette":"classic","palette_index":3},"alias":"unknown device","formula":"query1"},{"style":{"palette":"warm","palette_index":4},"alias":"incorrect password","formula":"query2"},{"style":{"palette":"green","palette_index":7},"alias":"incorrect username","formula":"query3"},{"alias":"Total Auth Failed","formula":"query1 + query2 + query3"}],"queries":[{"name":"query1","data_source":"metrics","query":"sum:auth.failed{$env, reason:unknown_device}.as_count()"},{"name":"query2","data_source":"metrics","query":"sum:auth.failed{$env, reason:incorrect_password}.as_count()"},{"name":"query3","data_source":"metrics","query":"sum:auth.failed{$env, reason:incorrect_username}.as_count()"}],"response_format":"timeseries","style":{"palette":"datadog16","order_by":"values","line_type":"solid","line_width":"normal"},"display_type":"line"}]},"layout":{"x":4,"y":10,"width":4,"height":2}},{"id":4084048139979910,"definition":{"type":"note","content":"***Section D*** — Kubernetes / Infrastructure\nCPU, memory, network, and restarts per pod.\nMetric names may vary by integration; adjust container/kubernetes metric names if needed.\nFilters: env/cluster/service/version.","background_color":"blue","font_size":"14","text_align":"left","show_tick":true},"layout":{"x":8,"y":10,"width":4,"height":2}},{"id":6704744065989026,"definition":{"title":"CPU usage per pod (avg/min/max)","show_legend":true,"legend_layout":"auto","type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"avg:container.cpu.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"}],"display_type":"line"},{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"min:container.cpu.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"}],"display_type":"line"},{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"max:container.cpu.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"}],"display_type":"line"}]},"layout":{"x":0,"y":12,"width":4,"height":2}},{"id":6188254508176673,"definition":{"title":"CPU user load (%) (avg/min/max)","show_legend":true,"legend_layout":"auto","legend_columns":["avg","min","max","value","sum"],"type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"avg:container.cpu.user{env:$env,kube_cluster_name:$cluster} by {host}"}],"formulas":[{"formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"},{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"min:container.cpu.system{env:$env,kube_cluster_name:$cluster} by {host}"}],"formulas":[{"formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"},{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"max:kubernetes.cpu.user.total{env:$env,kube_cluster_name:$cluster} by {host}"}],"formulas":[{"formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"}]},"layout":{"x":4,"y":12,"width":4,"height":2}},{"id":7928395158781325,"definition":{"title":"Memory usage per pod (avg/min/max)","show_legend":true,"legend_layout":"auto","type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"avg:container.memory.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"}],"display_type":"line"},{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"min:container.memory.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"}],"display_type":"line"},{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"max:container.memory.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"}],"display_type":"line"}]},"layout":{"x":8,"y":12,"width":4,"height":2}},{"id":19625198724067,"definition":{"title":"Network in/out (bytes)","show_legend":true,"legend_layout":"auto","legend_columns":["avg","min","max","value","sum"],"type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"sum:kubernetes.network.rx_bytes{*} by {pod_name}"}],"formulas":[{"formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"},{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"sum:kubernetes.network.tx_bytes{*} by {pod_name}"}],"formulas":[{"formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"}]},"layout":{"x":0,"y":14,"width":4,"height":2}},{"id":5734112442720849,"definition":{"title":"Traffic sent vs received (overlay)","show_legend":true,"legend_layout":"auto","legend_columns":["avg","min","max","value","sum"],"type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"sum:system.net.bytes_sent{$env, $cluster} by {cluster_name}"}],"formulas":[{"formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"},{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"sum:system.net.bytes_rcvd{*}"}],"formulas":[{"formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"}]},"layout":{"x":4,"y":14,"width":4,"height":2}},{"id":2101423960568046,"definition":{"title":"Container restarts (per pod)","type":"bar_chart","requests":[{"queries":[{"data_source":"metrics","name":"query1","query":"sum:kubernetes.containers.restarts{$cluster} by {pod_name,service}","aggregator":"avg"}],"response_format":"scalar","formulas":[{"formula":"query1"}],"sort":{"count":10,"order_by":[{"type":"formula","index":0,"order":"desc"}]}}],"style":{"display":{"type":"stacked","legend":"automatic"}}},"layout":{"x":8,"y":14,"width":4,"height":2}},{"id":6990312598585616,"definition":{"type":"note","content":"***Section E*** — Frontend / RUM\nRUM views/actions/errors and (optional) Web Vitals.\nFilters: env/service/version.","background_color":"blue","font_size":"14","text_align":"left","show_tick":true},"layout":{"x":0,"y":16,"width":4,"height":2}},{"id":5546296784771203,"definition":{"title":"RUM views (count)","show_legend":true,"legend_layout":"auto","legend_columns":["avg","min","max","value","sum"],"type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"sum:rum.measure.view{$service, service:web-frontend}.as_count()"}],"formulas":[{"alias":"RUM view counts","formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"}]},"layout":{"x":4,"y":16,"width":4,"height":2}},{"id":338754496475560,"definition":{"title":"RUM actions (count)","show_legend":true,"legend_layout":"auto","legend_columns":["avg","min","max","value","sum"],"type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"sum:rum.measure.session.action{env:$env,service:web-frontend,version:$version}.as_count()"}],"formulas":[{"formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"}]},"layout":{"x":8,"y":16,"width":4,"height":2}},{"id":4510310728572019,"definition":{"title":"RUM errors (count)","show_legend":true,"legend_layout":"auto","legend_columns":["avg","min","max","value","sum"],"type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"sum:rum.measure.error{env:$env,service:web-frontend,version:$version}.as_count()"}],"formulas":[{"formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"}]},"layout":{"x":0,"y":18,"width":4,"height":2}},{"id":4000669115695428,"definition":{"type":"note","content":"***Section F*** — AI / LLM Observability\nLLM request volume/errors/latency. Adjust metric names to your implementation (or replace with log-based metrics / spans).\nFilters: env/service/version.","background_color":"blue","font_size":"14","text_align":"left","show_tick":true},"layout":{"x":4,"y":18,"width":4,"height":2}},{"id":5899717296926980,"definition":{"title":"LLM requests OK vs error","show_legend":true,"legend_layout":"auto","legend_columns":["avg","min","max","value","sum"],"type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"sum:llm.request.ok{env:$env,service:llm-service,version:$version}"}],"formulas":[{"alias":"llm ok","formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"},{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"sum:llm.request.error{env:$env,service:llm-service,version:$version}"}],"formulas":[{"alias":"as llm error","formula":"query1"}],"style":{"palette":"dog_classic","line_type":"solid","line_width":"normal"},"display_type":"line"}]},"layout":{"x":8,"y":18,"width":4,"height":2}},{"id":7275306114220550,"definition":{"title":"LLM error rate (%)","type":"query_value","requests":[{"response_format":"scalar","queries":[{"data_source":"metrics","name":"query1","query":"sum:llm.request.error{env:$env,service:llm-service,version:$version}","aggregator":"avg"},{"data_source":"metrics","name":"query2","query":"sum:llm.request.ok{env:$env,service:llm-service,version:$version}","aggregator":"avg"}],"formulas":[{"formula":"100 * (query1 / (query2 + query1))"}]}],"autoscale":true,"precision":2},"layout":{"x":0,"y":20,"width":4,"height":2}},{"id":6977462522992193,"definition":{"title":"LLM latency (p50/p95 ms) (dummy metric)","show_legend":true,"legend_layout":"auto","type":"timeseries","requests":[{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"p50:llm.latency_ms{env:$env,service:llm-service,version:$version}"}],"display_type":"line"},{"response_format":"timeseries","queries":[{"data_source":"metrics","name":"query1","query":"p95:llm.latency_ms{env:$env,service:llm-service,version:$version}"}],"display_type":"line"}]},"layout":{"x":4,"y":20,"width":4,"height":2}}],"template_variables":[{"name":"env","prefix":"env","available_values":[],"default":"*"},{"name":"cluster","prefix":"kube_cluster_name","available_values":[],"default":"*"},{"name":"service","prefix":"service","available_values":[],"default":"*"},{"name":"bank","prefix":"bank","available_values":[],"default":"*"},{"name":"version","prefix":"version","available_values":[],"default":"*"}],"layout_type":"ordered","notify_list":[],"pause_auto_refresh":false,"reflow_type":"fixed","tags":["team:admin","team:dev"]}
+{
+  "title": "DD Demo – Mission Control",
+  "description": "Demo dashboard for payments + fraud + jira + auth + RUM + AI + Kubernetes. Uses template variables for env/cluster/service/bank/version. Metric names are partly dummy; adjust to match your account.",
+  "widgets": [
+    {
+      "id": 439710100806767,
+      "definition": {
+        "type": "note",
+        "content": "***Section A*** — Payments domain\nKPIs for created/settled/failed payments, failure reasons, and settlement latency.\nFilters: env/cluster/service/bank/version.",
+        "background_color": "blue",
+        "font_size": "14",
+        "text_align": "left",
+        "show_tick": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 3575101739082570,
+      "definition": {
+        "title": "Payments created (count)",
+        "type": "query_value",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:payment.created{$env, $service, $bank}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1",
+                "number_format": {
+                  "unit": {
+                    "type": "canonical_unit",
+                    "unit_name": "euro"
+                  }
+                }
+              }
+            ],
+            "conditional_formats": [
+              {
+                "comparator": ">=",
+                "value": 10000,
+                "palette": "custom_bg",
+                "custom_bg_color": "#632ca6"
+              },
+              {
+                "comparator": "<",
+                "value": 10000,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "autoscale": true,
+        "precision": 0
+      },
+      "layout": {
+        "x": 4,
+        "y": 0,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 6508457455660514,
+      "definition": {
+        "title": "Payments settled (count)",
+        "type": "query_value",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:payment.settled{$env, $service, $bank}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1",
+                "number_format": {
+                  "unit": {
+                    "type": "canonical_unit",
+                    "unit_name": "euro"
+                  }
+                }
+              }
+            ],
+            "conditional_formats": [
+              {
+                "comparator": ">=",
+                "value": 500,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": "<",
+                "value": 500,
+                "palette": "white_on_yellow"
+              }
+            ]
+          }
+        ],
+        "autoscale": true,
+        "precision": 0,
+        "timeseries_background": {
+          "type": "bars",
+          "yaxis": {}
+        }
+      },
+      "layout": {
+        "x": 8,
+        "y": 0,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 7542456689394755,
+      "definition": {
+        "title": "% Settled over Created",
+        "type": "query_value",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:payment.settled{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}.as_count()",
+                "aggregator": "avg"
+              },
+              {
+                "data_source": "metrics",
+                "name": "query2",
+                "query": "sum:payment.created{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}.as_count()",
+                "aggregator": "avg"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "100 * (query1 / query2)",
+                "number_format": {
+                  "unit": {
+                    "type": "canonical_unit",
+                    "unit_name": "percent"
+                  }
+                }
+              }
+            ],
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 85,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": ">=",
+                "value": 75,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<",
+                "value": 75,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ],
+        "autoscale": true,
+        "precision": 2
+      },
+      "layout": {
+        "x": 0,
+        "y": 2,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 7556219368820818,
+      "definition": {
+        "title": "Failed payments by reason",
+        "requests": [
+          {
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "sum:payment.failed{$env, $service} by {reason}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "response_format": "scalar",
+            "style": {
+              "palette": "datadog16"
+            },
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "sort": {
+              "count": 500,
+              "order_by": [
+                {
+                  "type": "formula",
+                  "index": 0,
+                  "order": "desc"
+                }
+              ]
+            }
+          }
+        ],
+        "type": "sunburst",
+        "legend": {
+          "type": "inline"
+        }
+      },
+      "layout": {
+        "x": 4,
+        "y": 2,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 5171449088422110,
+      "definition": {
+        "title": "Failed payments by reason",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": [
+          "avg",
+          "min",
+          "max",
+          "value",
+          "sum"
+        ],
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "sum:payment.failed{$env, $service} by {reason}.as_count()"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "order_by": "values",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 8,
+        "y": 2,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 8549449642931678,
+      "definition": {
+        "title": "Failed payments by reason (Top List)",
+        "type": "toplist",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:payment.failed{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version} by {reason}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 8,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">=",
+                "value": 6,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<=",
+                "value": 5,
+                "palette": "white_on_green"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "sort": {
+              "count": 10,
+              "order_by": [
+                {
+                  "type": "formula",
+                  "index": 0,
+                  "order": "desc"
+                }
+              ]
+            }
+          }
+        ],
+        "style": {}
+      },
+      "layout": {
+        "x": 0,
+        "y": 4,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 1454806870608597,
+      "definition": {
+        "title": "% failed over created per minute (time series)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": [
+          "avg",
+          "min",
+          "max",
+          "value",
+          "sum"
+        ],
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:payment.failed{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}.rollup(sum, 60).as_count()"
+              },
+              {
+                "data_source": "metrics",
+                "name": "query2",
+                "query": "sum:payment.created{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}.rollup(sum, 60).as_count()"
+              }
+            ],
+            "formulas": [
+              {
+                "alias": "percent_failed",
+                "formula": "100 * (query1 / query2)"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 4,
+        "y": 4,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 6156088206568160,
+      "definition": {
+        "title": "Failed payments by reason over time",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": [
+          "avg",
+          "min",
+          "max",
+          "value",
+          "sum"
+        ],
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:payment.failed{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version} by {reason}.as_count()"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 8,
+        "y": 4,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 4800085671411160,
+      "definition": {
+        "title": "Payment settlement latency (p50/p95 ms)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": [
+          "avg",
+          "min",
+          "max",
+          "value",
+          "sum"
+        ],
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "avg:payment.settlement_latency_ms.max{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          },
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "avg:payment.settlement_latency_ms.median{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 6,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 4949731103174728,
+      "definition": {
+        "type": "note",
+        "content": "***Section B*** — Fraud domain\nSuspected fraud signals and outcomes.\nFilters: env/cluster/bank/version.",
+        "background_color": "blue",
+        "font_size": "14",
+        "text_align": "left",
+        "show_tick": true
+      },
+      "layout": {
+        "x": 4,
+        "y": 6,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 7136910118884304,
+      "definition": {
+        "title": "Fraud Checks",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": [
+          "avg",
+          "min",
+          "max",
+          "value",
+          "sum"
+        ],
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "sum:fraud.check.rejected{$env, $service} by {service}.as_count()"
+              },
+              {
+                "name": "query2",
+                "data_source": "metrics",
+                "query": "sum:fraud.check.approved{$env, $service} by {service}.as_count()"
+              }
+            ],
+            "formulas": [
+              {
+                "alias": "fraud_check_rejected",
+                "formula": "query1"
+              },
+              {
+                "alias": "fraud_check_approved",
+                "formula": "query2"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "order_by": "values",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 8,
+        "y": 6,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 8244999496164757,
+      "definition": {
+        "title": "Total suspected fraud over time",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": [
+          "avg",
+          "min",
+          "max",
+          "value",
+          "sum"
+        ],
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:payment.failed{$env AND $service AND reason:fraud_detected OR reason:suspected_fraud}.as_count()"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 8,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 6149188380032365,
+      "definition": {
+        "title": "% suspected fraud cleared (not fraudulent)",
+        "type": "query_value",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:fraud.cleared{env:$env,kube_cluster_name:$cluster,service:fraud-service,bank:$bank,version:$version}",
+                "aggregator": "avg"
+              },
+              {
+                "data_source": "metrics",
+                "name": "query2",
+                "query": "sum:fraud.suspected{env:$env,kube_cluster_name:$cluster,service:fraud-service,bank:$bank,version:$version}",
+                "aggregator": "avg"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "100 * (query1 / query2)"
+              }
+            ]
+          }
+        ],
+        "autoscale": true,
+        "precision": 2
+      },
+      "layout": {
+        "x": 4,
+        "y": 8,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 5420709352354726,
+      "definition": {
+        "type": "note",
+        "content": "***Section C*** — Authentication domain\nAuth outcomes (success/failure) and latency.\nFilters: env/cluster/service/version.",
+        "background_color": "blue",
+        "font_size": "14",
+        "text_align": "left",
+        "show_tick": true
+      },
+      "layout": {
+        "x": 8,
+        "y": 8,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 6033387144135756,
+      "definition": {
+        "title": "Authentication outcomes by reason (failures)",
+        "requests": [
+          {
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "sum:auth.failed{$env, $service} by {reason}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "response_format": "scalar",
+            "style": {
+              "palette": "datadog16"
+            },
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "sort": {
+              "order_by": [
+                {
+                  "type": "formula",
+                  "index": 0,
+                  "order": "desc"
+                }
+              ]
+            }
+          }
+        ],
+        "type": "sunburst",
+        "legend": {
+          "type": "automatic"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 10,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 7444345585578279,
+      "definition": {
+        "title": "Authentication outcomes by reason (failures)",
+        "show_legend": false,
+        "type": "timeseries",
+        "requests": [
+          {
+            "formulas": [
+              {
+                "style": {
+                  "palette": "classic",
+                  "palette_index": 3
+                },
+                "alias": "unknown device",
+                "formula": "query1"
+              },
+              {
+                "style": {
+                  "palette": "warm",
+                  "palette_index": 4
+                },
+                "alias": "incorrect password",
+                "formula": "query2"
+              },
+              {
+                "style": {
+                  "palette": "green",
+                  "palette_index": 7
+                },
+                "alias": "incorrect username",
+                "formula": "query3"
+              },
+              {
+                "alias": "Total Auth Failed",
+                "formula": "query1 + query2 + query3"
+              }
+            ],
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "sum:auth.failed{$env, reason:unknown_device}.as_count()"
+              },
+              {
+                "name": "query2",
+                "data_source": "metrics",
+                "query": "sum:auth.failed{$env, reason:incorrect_password}.as_count()"
+              },
+              {
+                "name": "query3",
+                "data_source": "metrics",
+                "query": "sum:auth.failed{$env, reason:incorrect_username}.as_count()"
+              }
+            ],
+            "response_format": "timeseries",
+            "style": {
+              "palette": "datadog16",
+              "order_by": "values",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 4,
+        "y": 10,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 4084048139979910,
+      "definition": {
+        "type": "note",
+        "content": "***Section D*** — Kubernetes / Infrastructure\nCPU, memory, network, and restarts per pod.\nMetric names may vary by integration; adjust container/kubernetes metric names if needed.\nFilters: env/cluster/service/version.",
+        "background_color": "blue",
+        "font_size": "14",
+        "text_align": "left",
+        "show_tick": true
+      },
+      "layout": {
+        "x": 8,
+        "y": 10,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 6704744065989026,
+      "definition": {
+        "title": "CPU usage per pod (avg/min/max)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "avg:container.cpu.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"
+              }
+            ],
+            "display_type": "line"
+          },
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "min:container.cpu.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"
+              }
+            ],
+            "display_type": "line"
+          },
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "max:container.cpu.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"
+              }
+            ],
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 12,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 6188254508176673,
+      "definition": {
+        "title": "CPU user load (%) (avg/min/max)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": [
+          "avg",
+          "min",
+          "max",
+          "value",
+          "sum"
+        ],
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "avg:container.cpu.user{env:$env,kube_cluster_name:$cluster} by {host}"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          },
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "min:container.cpu.system{env:$env,kube_cluster_name:$cluster} by {host}"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          },
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "max:kubernetes.cpu.user.total{env:$env,kube_cluster_name:$cluster} by {host}"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 4,
+        "y": 12,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 7928395158781325,
+      "definition": {
+        "title": "Memory usage per pod (avg/min/max)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "avg:container.memory.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"
+              }
+            ],
+            "display_type": "line"
+          },
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "min:container.memory.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"
+              }
+            ],
+            "display_type": "line"
+          },
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "max:container.memory.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"
+              }
+            ],
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 8,
+        "y": 12,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 19625198724067,
+      "definition": {
+        "title": "Network in/out (bytes)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": [
+          "avg",
+          "min",
+          "max",
+          "value",
+          "sum"
+        ],
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:kubernetes.network.rx_bytes{*} by {pod_name}"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          },
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:kubernetes.network.tx_bytes{*} by {pod_name}"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 14,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 5734112442720849,
+      "definition": {
+        "title": "Traffic sent vs received (overlay)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": [
+          "avg",
+          "min",
+          "max",
+          "value",
+          "sum"
+        ],
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:system.net.bytes_sent{$env, $cluster} by {cluster_name}"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          },
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:system.net.bytes_rcvd{*}"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 4,
+        "y": 14,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 2101423960568046,
+      "definition": {
+        "title": "Container restarts (per pod)",
+        "type": "bar_chart",
+        "requests": [
+          {
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:kubernetes.containers.restarts{$cluster} by {pod_name,service}",
+                "aggregator": "avg"
+              }
+            ],
+            "response_format": "scalar",
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "sort": {
+              "count": 10,
+              "order_by": [
+                {
+                  "type": "formula",
+                  "index": 0,
+                  "order": "desc"
+                }
+              ]
+            }
+          }
+        ],
+        "style": {
+          "display": {
+            "type": "stacked",
+            "legend": "automatic"
+          }
+        }
+      },
+      "layout": {
+        "x": 8,
+        "y": 14,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 6990312598585616,
+      "definition": {
+        "type": "note",
+        "content": "***Section E*** — Frontend / RUM\nRUM views/actions/errors and (optional) Web Vitals.\nFilters: env/service/version.",
+        "background_color": "blue",
+        "font_size": "14",
+        "text_align": "left",
+        "show_tick": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 16,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 5546296784771203,
+      "definition": {
+        "title": "RUM views (count)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": [
+          "avg",
+          "min",
+          "max",
+          "value",
+          "sum"
+        ],
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:rum.measure.view{$service, service:web-frontend}.as_count()"
+              }
+            ],
+            "formulas": [
+              {
+                "alias": "RUM view counts",
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 4,
+        "y": 16,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 338754496475560,
+      "definition": {
+        "title": "RUM actions (count)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": [
+          "avg",
+          "min",
+          "max",
+          "value",
+          "sum"
+        ],
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:rum.measure.session.action{env:$env,service:web-frontend,version:$version}.as_count()"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 8,
+        "y": 16,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 4510310728572019,
+      "definition": {
+        "title": "RUM errors (count)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": [
+          "avg",
+          "min",
+          "max",
+          "value",
+          "sum"
+        ],
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:rum.measure.error{env:$env,service:web-frontend,version:$version}.as_count()"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 18,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 4000669115695428,
+      "definition": {
+        "type": "note",
+        "content": "***Section F*** — AI / LLM Observability\nLLM request volume/errors/latency. Adjust metric names to your implementation (or replace with log-based metrics / spans).\nFilters: env/service/version.",
+        "background_color": "blue",
+        "font_size": "14",
+        "text_align": "left",
+        "show_tick": true
+      },
+      "layout": {
+        "x": 4,
+        "y": 18,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 5899717296926980,
+      "definition": {
+        "title": "LLM requests OK vs error",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": [
+          "avg",
+          "min",
+          "max",
+          "value",
+          "sum"
+        ],
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:llm.request.ok{env:$env,service:llm-service,version:$version}"
+              }
+            ],
+            "formulas": [
+              {
+                "alias": "llm ok",
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          },
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:llm.request.error{env:$env,service:llm-service,version:$version}"
+              }
+            ],
+            "formulas": [
+              {
+                "alias": "as llm error",
+                "formula": "query1"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 8,
+        "y": 18,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 7275306114220550,
+      "definition": {
+        "title": "LLM error rate (%)",
+        "type": "query_value",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:llm.request.error{env:$env,service:llm-service,version:$version}",
+                "aggregator": "avg"
+              },
+              {
+                "data_source": "metrics",
+                "name": "query2",
+                "query": "sum:llm.request.ok{env:$env,service:llm-service,version:$version}",
+                "aggregator": "avg"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "100 * (query1 / (query2 + query1))"
+              }
+            ]
+          }
+        ],
+        "autoscale": true,
+        "precision": 2
+      },
+      "layout": {
+        "x": 0,
+        "y": 20,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 6977462522992193,
+      "definition": {
+        "title": "LLM latency (p50/p95 ms) (dummy metric)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "p50:llm.latency_ms{env:$env,service:llm-service,version:$version}"
+              }
+            ],
+            "display_type": "line"
+          },
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "p95:llm.latency_ms{env:$env,service:llm-service,version:$version}"
+              }
+            ],
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 4,
+        "y": 20,
+        "width": 4,
+        "height": 2
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "env",
+      "prefix": "env",
+      "available_values": [],
+      "default": "*"
+    },
+    {
+      "name": "cluster",
+      "prefix": "kube_cluster_name",
+      "available_values": [],
+      "default": "*"
+    },
+    {
+      "name": "service",
+      "prefix": "service",
+      "available_values": [],
+      "default": "*"
+    },
+    {
+      "name": "bank",
+      "prefix": "bank",
+      "available_values": [],
+      "default": "*"
+    },
+    {
+      "name": "version",
+      "prefix": "version",
+      "available_values": [],
+      "default": "*"
+    }
+  ],
+  "layout_type": "ordered",
+  "notify_list": [],
+  "pause_auto_refresh": false,
+  "reflow_type": "fixed",
+  "tags": [
+    "team:admin",
+    "team:dev"
+  ]
+}
