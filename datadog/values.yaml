@@ -1,0 +1,29 @@
+datadog:
+  apiKeyExistingSecret: datadog-secret
+
+  kubelet:
+    tlsVerify: false
+
+  logs:
+    enabled: true
+    containerCollectAll: true
+    containerCollectUsingFiles: true
+
+  apm:
+    portEnabled: true
+    socketEnabled: false
+
+  dogstatsd:
+    useHostPort: true
+    nonLocalTraffic: true
+
+clusterAgent:
+  enabled: true
+  replicas: 1
+
+processAgent:
+  enabled: true
+networkMonitoring:
+  enabled: true
+systemProbe:
+  enabled: true

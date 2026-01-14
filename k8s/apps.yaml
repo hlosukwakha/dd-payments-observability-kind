@@ -1,0 +1,398 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: dd-demo
+  labels:
+    app: auth-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: demo-services:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["uvicorn", "services.auth_service:app", "--host", "0.0.0.0", "--port", "8000" , "--log-level", "debug"]
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: demo-config
+            - secretRef:
+                name: demo-secrets
+          env:
+            - name: DD_SERVICE
+              value: "auth-service"
+            - name: DD_LOGS_INJECTION
+              value: "true"
+            - name: DD_TRACE_ENABLED
+              value: "true"
+            - name: DD_TRACE_PROPAGATION_STYLE
+              value: "tracecontext,datadog"
+            - name: DD_TRACE_SAMPLE_RATE
+              value: "1"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_TRACE_AGENT_PORT
+              value: "8126"
+            - name: DD_DOGSTATSD_PORT
+              value: "8125"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: dd-demo
+  labels:
+    app: auth-service
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jira-poller
+  namespace: dd-demo
+  labels:
+    app: jira-poller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jira-poller
+  template:
+    metadata:
+      labels:
+        app: jira-poller
+    spec:
+      containers:
+        - name: jira-poller
+          image: demo-services:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["uvicorn", "services.jira_poller:app", "--host", "0.0.0.0", "--port", "8000" , "--log-level", "debug"]
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: demo-config
+            - secretRef:
+                name: demo-secrets
+          env:
+            - name: DD_SERVICE
+              value: "jira-poller"
+            - name: DD_LOGS_INJECTION
+              value: "true"
+            - name: DD_TRACE_ENABLED
+              value: "true"
+            - name: DD_TRACE_PROPAGATION_STYLE
+              value: "tracecontext,datadog"
+            - name: DD_TRACE_SAMPLE_RATE
+              value: "1"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_TRACE_AGENT_PORT
+              value: "8126"
+            - name: DD_DOGSTATSD_PORT
+              value: "8125"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jira-poller
+  namespace: dd-demo
+  labels:
+    app: jira-poller
+spec:
+  selector:
+    app: jira-poller
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fraud-service
+  namespace: dd-demo
+  labels:
+    app: fraud-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fraud-service
+  template:
+    metadata:
+      labels:
+        app: fraud-service
+    spec:
+      containers:
+        - name: fraud-service
+          image: demo-services:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["uvicorn", "services.fraud_service:app", "--host", "0.0.0.0", "--port", "8000" , "--log-level", "debug"]
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: demo-config
+            - secretRef:
+                name: demo-secrets
+          env:
+            - name: DD_SERVICE
+              value: "fraud-service"
+            - name: DD_LOGS_INJECTION
+              value: "true"
+            - name: DD_TRACE_ENABLED
+              value: "true"
+            - name: DD_TRACE_PROPAGATION_STYLE
+              value: "tracecontext,datadog"
+            - name: DD_TRACE_SAMPLE_RATE
+              value: "1"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_TRACE_AGENT_PORT
+              value: "8126"
+            - name: DD_DOGSTATSD_PORT
+              value: "8125"
+            - name: JIRA_POLLER_URL
+              value: "http://jira-poller.dd-demo.svc.cluster.local:8000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fraud-service
+  namespace: dd-demo
+  labels:
+    app: fraud-service
+spec:
+  selector:
+    app: fraud-service
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: dd-demo
+  labels:
+    app: payment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: demo-services:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["uvicorn", "services.payment_service:app", "--host", "0.0.0.0", "--port", "8000" , "--log-level", "debug"]
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: demo-config
+            - secretRef:
+                name: demo-secrets
+          env:
+            - name: DD_SERVICE
+              value: "payment-service"
+            - name: DD_LOGS_INJECTION
+              value: "true"
+            - name: DD_TRACE_ENABLED
+              value: "true"
+            - name: DD_TRACE_PROPAGATION_STYLE
+              value: "tracecontext,datadog"
+            - name: DD_TRACE_SAMPLE_RATE
+              value: "1"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_TRACE_AGENT_PORT
+              value: "8126"
+            - name: DD_DOGSTATSD_PORT
+              value: "8125"
+            - name: FRAUD_SERVICE_URL
+              value: "http://fraud-service.dd-demo.svc.cluster.local:8000"
+            - name: JIRA_POLLER_URL
+              value: "http://jira-poller.dd-demo.svc.cluster.local:8000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: dd-demo
+  labels:
+    app: payment-service
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-service
+  namespace: dd-demo
+  labels:
+    app: llm-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llm-service
+  template:
+    metadata:
+      labels:
+        app: llm-service
+    spec:
+      containers:
+        - name: llm-service
+          image: demo-services:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["uvicorn", "services.llm_service:app", "--host", "0.0.0.0", "--port", "8000" , "--log-level", "debug"]
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: demo-config
+            - secretRef:
+                name: demo-secrets
+          env:
+            - name: DD_SERVICE
+              value: "llm-service"
+            - name: DD_LOGS_INJECTION
+              value: "true"
+            - name: DD_TRACE_ENABLED
+              value: "true"
+            - name: DD_TRACE_PROPAGATION_STYLE
+              value: "tracecontext,datadog"
+            - name: DD_TRACE_SAMPLE_RATE
+              value: "1"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_TRACE_AGENT_PORT
+              value: "8126"
+            - name: DD_DOGSTATSD_PORT
+              value: "8125"
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                    name: datadog-secret
+                    key: api-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-service
+  namespace: dd-demo
+  labels:
+    app: llm-service
+spec:
+  selector:
+    app: llm-service
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-frontend
+  namespace: dd-demo
+  labels:
+    app: web-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-frontend
+  template:
+    metadata:
+      labels:
+        app: web-frontend
+    spec:
+      containers:
+        - name: web-frontend
+          image: demo-services:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["uvicorn", "services.web_frontend:app", "--host", "0.0.0.0", "--port", "8000" , "--log-level", "debug"]
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: demo-config
+            - secretRef:
+                name: demo-secrets
+          env:
+            - name: DD_SERVICE
+              value: "web-frontend"
+            - name: DD_LOGS_INJECTION
+              value: "true"
+            - name: DD_TRACE_ENABLED
+              value: "true"
+            - name: DD_TRACE_PROPAGATION_STYLE
+              value: "tracecontext,datadog"
+            - name: DD_TRACE_SAMPLE_RATE
+              value: "1"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_TRACE_AGENT_PORT
+              value: "8126"
+            - name: DD_DOGSTATSD_PORT
+              value: "8125"
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service.dd-demo.svc.cluster.local:8000"
+            - name: PAYMENT_SERVICE_URL
+              value: "http://payment-service.dd-demo.svc.cluster.local:8000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-frontend
+  namespace: dd-demo
+  labels:
+    app: web-frontend
+spec:
+  selector:
+    app: web-frontend
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000

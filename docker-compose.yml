@@ -1,0 +1,25 @@
+services:
+  ctl:
+    ports:
+      - "8080:8080"
+      - "8000:8000"
+    build:
+      context: .
+      dockerfile: docker/ctl/Dockerfile
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - .env
+    environment:
+      - KUBECONFIG=/workspace/.kube/config
+      - DD_API_KEY=${DD_API_KEY}
+    networks:
+      - default
+      - kind
+
+networks:
+  kind:
+    external: true
+    name: kind

@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Payments Demo (Auth → Pay → Fraud/Jira)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 2rem; max-width: 900px; }
+    .card { border: 1px solid #3333; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    label { display:block; margin-top: 10px; font-weight: 600; }
+    input, select { width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #3333; border-radius: 10px; }
+    button { padding: 10px 14px; border-radius: 10px; border: 1px solid #3333; background: #111; color: #fff; cursor:pointer; margin-top: 12px; }
+    .row { display:flex; gap: 12px; }
+    .row > div { flex:1; }
+    pre { background: #111; color: #ddd; padding: 12px; border-radius: 12px; overflow:auto; }
+    .hidden { display:none; }
+    .ok { color: #0a7; font-weight: 700; }
+    .err { color: #c33; font-weight: 700; }
+  </style>
+
+  <!-- Datadog RUM Browser Agent (EU1, v6) -->
+  <script
+    src="https://www.datadoghq-browser-agent.com/eu1/v6/datadog-rum.js"
+    type="text/javascript">
+  </script>
+</head>
+
+<body>
+  <h1>Payments Demo</h1>
+  <p>This UI generates RUM + Session Replay, and triggers backend traces that propagate across services.</p>
+
+  <div class="card" id="authCard">
+    <h2>1) Authentication</h2>
+    <div class="row">
+      <div>
+        <label>Username</label>
+        <input id="username" placeholder="e.g. alice" />
+      </div>
+      <div>
+        <label>Password</label>
+        <input id="password" type="password" placeholder="e.g. password" />
+      </div>
+    </div>
+    <button id="btnLogin">Login</button>
+    <div id="authResult"></div>
+  </div>
+
+  <div class="card hidden" id="payCard">
+    <h2>2) Make a Payment</h2>
+    <div class="row">
+      <div>
+        <label>Bank</label>
+        <select id="bank"></select>
+      </div>
+      <div>
+        <label>Amount</label>
+        <input id="amount" placeholder="e.g. 125.50" />
+      </div>
+    </div>
+    <button id="btnPay">Pay</button>
+    <div id="payResult"></div>
+  </div>
+
+  <div class="card">
+    <h2>Debug</h2>
+    <pre id="debug"></pre>
+  </div>
+
+  <script>
+  (function initDatadogRum(){
+    // This placeholder should be replaced server-side by web_frontend.py
+    // html = html.replace("__RUM_CONFIG__", json.dumps(RUM))
+    const cfg = __RUM_CONFIG__;
+
+    if (!cfg || !cfg.clientToken || !cfg.applicationId) {
+      console.warn("Datadog RUM not configured. Set DD_RUM_APPLICATION_ID and DD_RUM_CLIENT_TOKEN.");
+      return;
+    }
+
+    // v6 Browser Agent exposes window.DD_RUM
+    if (!window.DD_RUM || typeof window.DD_RUM.init !== "function") {
+      console.warn("Datadog RUM SDK not loaded (window.DD_RUM missing). Check script tag / network access.");
+      return;
+    }
+
+    window.DD_RUM.init({
+      clientToken: cfg.clientToken,
+      applicationId: cfg.applicationId,
+      site: cfg.site || "datadoghq.eu",
+      service: cfg.service || "web-frontend",
+      env: cfg.env || "dev",
+      version: cfg.version || "0.1.0",
+
+      sessionSampleRate: 100,
+      sessionReplaySampleRate: Number(cfg.sessionReplaySampleRate ?? 100),
+
+      trackBfcacheViews: true,
+      defaultPrivacyLevel: "mask-user-input",
+
+       //Optional: if you want front/back trace correlation from browser -> backend:
+       allowedTracingUrls: [
+         { match: "http://localhost:8080", propagatorTypes: ["tracecontext","datadog"] },
+         { match: "http://127.0.0.1:8080", propagatorTypes: ["tracecontext","datadog"] }
+       ],
+    });
+
+    // In v6, session replay is enabled by sample rate; no need to call startSessionReplayRecording.
+  })();
+  </script>
+
+  <script>
+  const debugEl = document.getElementById("debug");
+  const authResult = document.getElementById("authResult");
+  const payResult = document.getElementById("payResult");
+  const payCard = document.getElementById("payCard");
+
+  function logDebug(obj) { debugEl.textContent = JSON.stringify(obj, null, 2); }
+
+  async function loadBanks() {
+    const r = await fetch("/api/banks");
+    const data = await r.json();
+    const sel = document.getElementById("bank");
+    sel.innerHTML = "";
+    data.banks.forEach(b => {
+      const opt = document.createElement("option");
+      opt.value = b.id;
+      opt.textContent = `${b.id} — ${b.name}`;
+      sel.appendChild(opt);
+    });
+  }
+
+  document.getElementById("btnLogin").addEventListener("click", async () => {
+    authResult.innerHTML = "";
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    // Optional: add RUM action
+    window.DD_RUM?.addAction?.("login_attempt", { username });
+
+    const r = await fetch("/api/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await r.json();
+    logDebug({ endpoint: "/api/login", status: r.status, data });
+
+    if (r.ok) {
+      authResult.innerHTML = `<p class="ok">Authenticated. customer_id=${data.customer_id}</p>`;
+      payCard.classList.remove("hidden");
+      await loadBanks();
+
+      // Optional: attach user
+      window.DD_RUM?.setUser?.({ id: data.customer_id, name: username });
+    } else {
+      authResult.innerHTML = `<p class="err">Auth error: ${JSON.stringify(data)}</p>`;
+    }
+  });
+
+  document.getElementById("btnPay").addEventListener("click", async () => {
+    payResult.innerHTML = "";
+    const bank_id = document.getElementById("bank").value;
+    const amount = parseFloat(document.getElementById("amount").value || "0");
+
+    window.DD_RUM?.addAction?.("pay_attempt", { bank_id, amount });
+
+    const r = await fetch("/api/pay", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ bank_id, amount })
+    });
+
+    const data = await r.json();
+    logDebug({ endpoint: "/api/pay", status: r.status, data });
+
+    if (r.ok) {
+      payResult.innerHTML = `<p class="ok">Payment ${data.status}. payment_id=${data.payment_id}</p>`;
+    } else {
+      payResult.innerHTML = `<p class="err">Payment failed: ${JSON.stringify(data)}</p>`;
+      window.DD_RUM?.addError?.("payment_failed", { bank_id, amount, response: data });
+    }
+  });
+  </script>
+</body>
+</html>
