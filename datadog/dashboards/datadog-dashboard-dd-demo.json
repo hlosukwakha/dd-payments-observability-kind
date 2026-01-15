@@ -6,8 +6,8 @@
       "id": 439710100806767,
       "definition": {
         "type": "note",
-        "content": "***Section A*** — Payments domain\nKPIs for created/settled/failed payments, failure reasons, and settlement latency.\nFilters: env/cluster/service/bank/version.",
-        "background_color": "blue",
+        "content": "## Business Metrics",
+        "background_color": "vivid_blue",
         "font_size": "14",
         "text_align": "left",
         "show_tick": true
@@ -15,7 +15,54 @@
       "layout": {
         "x": 0,
         "y": 0,
-        "width": 4,
+        "width": 12,
+        "height": 1
+      }
+    },
+    {
+      "id": 7556219368820818,
+      "definition": {
+        "title": "Failed payments by reason",
+        "requests": [
+          {
+            "queries": [
+              {
+                "name": "query1",
+                "data_source": "metrics",
+                "query": "sum:payment.failed{$env, $service} by {reason}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "response_format": "scalar",
+            "style": {
+              "palette": "datadog16"
+            },
+            "formulas": [
+              {
+                "formula": "query1"
+              }
+            ],
+            "sort": {
+              "count": 500,
+              "order_by": [
+                {
+                  "type": "formula",
+                  "index": 0,
+                  "order": "desc"
+                }
+              ]
+            }
+          }
+        ],
+        "type": "sunburst",
+        "legend": {
+          "type": "inline"
+        }
+      },
+      "layout": {
+        "x": 1,
+        "y": 1,
+        "width": 2,
         "height": 2
       }
     },
@@ -65,9 +112,9 @@
         "precision": 0
       },
       "layout": {
-        "x": 4,
-        "y": 0,
-        "width": 4,
+        "x": 3,
+        "y": 1,
+        "width": 2,
         "height": 2
       }
     },
@@ -120,9 +167,9 @@
         }
       },
       "layout": {
-        "x": 8,
-        "y": 0,
-        "width": 4,
+        "x": 5,
+        "y": 1,
+        "width": 2,
         "height": 2
       }
     },
@@ -182,23 +229,23 @@
         "precision": 2
       },
       "layout": {
-        "x": 0,
-        "y": 2,
-        "width": 4,
+        "x": 7,
+        "y": 1,
+        "width": 2,
         "height": 2
       }
     },
     {
-      "id": 7556219368820818,
+      "id": 6033387144135756,
       "definition": {
-        "title": "Failed payments by reason",
+        "title": "Authentication outcomes by reason (failures)",
         "requests": [
           {
             "queries": [
               {
                 "name": "query1",
                 "data_source": "metrics",
-                "query": "sum:payment.failed{$env, $service} by {reason}.as_count()",
+                "query": "sum:auth.failed{$env, $service} by {reason}.as_count()",
                 "aggregator": "sum"
               }
             ],
@@ -212,7 +259,6 @@
               }
             ],
             "sort": {
-              "count": 500,
               "order_by": [
                 {
                   "type": "formula",
@@ -225,20 +271,20 @@
         ],
         "type": "sunburst",
         "legend": {
-          "type": "inline"
+          "type": "automatic"
         }
       },
       "layout": {
-        "x": 4,
-        "y": 2,
-        "width": 4,
+        "x": 9,
+        "y": 1,
+        "width": 2,
         "height": 2
       }
     },
     {
-      "id": 5171449088422110,
+      "id": 8244999496164757,
       "definition": {
-        "title": "Failed payments by reason",
+        "title": "Total suspected fraud over time",
         "show_legend": true,
         "legend_layout": "auto",
         "legend_columns": [
@@ -254,19 +300,19 @@
             "response_format": "timeseries",
             "queries": [
               {
-                "name": "query1",
                 "data_source": "metrics",
-                "query": "sum:payment.failed{$env, $service} by {reason}.as_count()"
+                "name": "query1",
+                "query": "sum:payment.failed{$env AND $service AND reason:fraud_detected OR reason:suspected_fraud}.as_count()"
               }
             ],
             "formulas": [
               {
+                "alias": "Total Suspected Fraud",
                 "formula": "query1"
               }
             ],
             "style": {
               "palette": "dog_classic",
-              "order_by": "values",
               "line_type": "solid",
               "line_width": "normal"
             },
@@ -275,9 +321,60 @@
         ]
       },
       "layout": {
-        "x": 8,
-        "y": 2,
-        "width": 4,
+        "x": 0,
+        "y": 3,
+        "width": 2,
+        "height": 2
+      }
+    },
+    {
+      "id": 1454806870608597,
+      "definition": {
+        "title": "% failed over created per minute (time series)",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": [
+          "avg",
+          "min",
+          "max",
+          "value",
+          "sum"
+        ],
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "sum:payment.failed{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}.rollup(sum, 60).as_count()"
+              },
+              {
+                "data_source": "metrics",
+                "name": "query2",
+                "query": "sum:payment.created{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}.rollup(sum, 60).as_count()"
+              }
+            ],
+            "formulas": [
+              {
+                "alias": "percent_failed",
+                "formula": "100 * (query1 / query2)"
+              }
+            ],
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": {
+        "x": 2,
+        "y": 3,
+        "width": 3,
         "height": 2
       }
     },
@@ -334,195 +431,16 @@
         "style": {}
       },
       "layout": {
-        "x": 0,
-        "y": 4,
-        "width": 4,
+        "x": 5,
+        "y": 3,
+        "width": 3,
         "height": 2
       }
     },
     {
-      "id": 1454806870608597,
+      "id": 5171449088422110,
       "definition": {
-        "title": "% failed over created per minute (time series)",
-        "show_legend": true,
-        "legend_layout": "auto",
-        "legend_columns": [
-          "avg",
-          "min",
-          "max",
-          "value",
-          "sum"
-        ],
-        "type": "timeseries",
-        "requests": [
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:payment.failed{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}.rollup(sum, 60).as_count()"
-              },
-              {
-                "data_source": "metrics",
-                "name": "query2",
-                "query": "sum:payment.created{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}.rollup(sum, 60).as_count()"
-              }
-            ],
-            "formulas": [
-              {
-                "alias": "percent_failed",
-                "formula": "100 * (query1 / query2)"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          }
-        ]
-      },
-      "layout": {
-        "x": 4,
-        "y": 4,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 6156088206568160,
-      "definition": {
-        "title": "Failed payments by reason over time",
-        "show_legend": true,
-        "legend_layout": "auto",
-        "legend_columns": [
-          "avg",
-          "min",
-          "max",
-          "value",
-          "sum"
-        ],
-        "type": "timeseries",
-        "requests": [
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:payment.failed{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version} by {reason}.as_count()"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          }
-        ]
-      },
-      "layout": {
-        "x": 8,
-        "y": 4,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 4800085671411160,
-      "definition": {
-        "title": "Payment settlement latency (p50/p95 ms)",
-        "show_legend": true,
-        "legend_layout": "auto",
-        "legend_columns": [
-          "avg",
-          "min",
-          "max",
-          "value",
-          "sum"
-        ],
-        "type": "timeseries",
-        "requests": [
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "avg:payment.settlement_latency_ms.max{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          },
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "avg:payment.settlement_latency_ms.median{env:$env,kube_cluster_name:$cluster,service:payment-service,bank:$bank,version:$version}"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          }
-        ]
-      },
-      "layout": {
-        "x": 0,
-        "y": 6,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 4949731103174728,
-      "definition": {
-        "type": "note",
-        "content": "***Section B*** — Fraud domain\nSuspected fraud signals and outcomes.\nFilters: env/cluster/bank/version.",
-        "background_color": "blue",
-        "font_size": "14",
-        "text_align": "left",
-        "show_tick": true
-      },
-      "layout": {
-        "x": 4,
-        "y": 6,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 7136910118884304,
-      "definition": {
-        "title": "Fraud Checks",
+        "title": "Failed payments by reason",
         "show_legend": true,
         "legend_layout": "auto",
         "legend_columns": [
@@ -540,22 +458,12 @@
               {
                 "name": "query1",
                 "data_source": "metrics",
-                "query": "sum:fraud.check.rejected{$env, $service} by {service}.as_count()"
-              },
-              {
-                "name": "query2",
-                "data_source": "metrics",
-                "query": "sum:fraud.check.approved{$env, $service} by {service}.as_count()"
+                "query": "sum:payment.failed{$env, $service} by {reason}.as_count()"
               }
             ],
             "formulas": [
               {
-                "alias": "fraud_check_rejected",
                 "formula": "query1"
-              },
-              {
-                "alias": "fraud_check_approved",
-                "formula": "query2"
               }
             ],
             "style": {
@@ -570,764 +478,208 @@
       },
       "layout": {
         "x": 8,
+        "y": 3,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 6166847413632155,
+      "definition": {
+        "type": "note",
+        "content": "## Payment & Fraud Services Health Summary",
+        "background_color": "vivid_blue",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left",
+        "has_padding": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 5,
+        "width": 12,
+        "height": 1
+      }
+    },
+    {
+      "id": 8317263934783401,
+      "definition": {
+        "title": "Payment Service Health",
+        "type": "trace_service",
+        "env": "$env",
+        "service": "payment-service",
+        "span_name": "fastapi.request",
+        "show_hits": true,
+        "show_errors": true,
+        "show_latency": true,
+        "show_breakdown": true,
+        "show_distribution": true,
+        "show_resource_list": false,
+        "size_format": "medium",
+        "display_format": "two_column"
+      },
+      "layout": {
+        "x": 0,
         "y": 6,
-        "width": 4,
-        "height": 2
+        "width": 6,
+        "height": 6
       }
     },
     {
-      "id": 8244999496164757,
+      "id": 95212144701552,
       "definition": {
-        "title": "Total suspected fraud over time",
-        "show_legend": true,
-        "legend_layout": "auto",
-        "legend_columns": [
-          "avg",
-          "min",
-          "max",
-          "value",
-          "sum"
-        ],
-        "type": "timeseries",
-        "requests": [
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:payment.failed{$env AND $service AND reason:fraud_detected OR reason:suspected_fraud}.as_count()"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          }
-        ]
+        "title": "Fraud Service Health",
+        "type": "trace_service",
+        "env": "$env",
+        "service": "fraud-service",
+        "span_name": "fastapi.request",
+        "show_hits": true,
+        "show_errors": true,
+        "show_latency": true,
+        "show_breakdown": true,
+        "show_distribution": true,
+        "show_resource_list": false,
+        "size_format": "medium",
+        "display_format": "two_column"
+      },
+      "layout": {
+        "x": 6,
+        "y": 6,
+        "width": 6,
+        "height": 6
+      }
+    },
+    {
+      "id": 5480950008122349,
+      "definition": {
+        "type": "note",
+        "content": "## Alerts & Monitors",
+        "background_color": "vivid_blue",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left",
+        "has_padding": true
       },
       "layout": {
         "x": 0,
-        "y": 8,
-        "width": 4,
-        "height": 2
+        "y": 12,
+        "width": 6,
+        "height": 1
       }
     },
     {
-      "id": 6149188380032365,
-      "definition": {
-        "title": "% suspected fraud cleared (not fraudulent)",
-        "type": "query_value",
-        "requests": [
-          {
-            "response_format": "scalar",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:fraud.cleared{env:$env,kube_cluster_name:$cluster,service:fraud-service,bank:$bank,version:$version}",
-                "aggregator": "avg"
-              },
-              {
-                "data_source": "metrics",
-                "name": "query2",
-                "query": "sum:fraud.suspected{env:$env,kube_cluster_name:$cluster,service:fraud-service,bank:$bank,version:$version}",
-                "aggregator": "avg"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "100 * (query1 / query2)"
-              }
-            ]
-          }
-        ],
-        "autoscale": true,
-        "precision": 2
-      },
-      "layout": {
-        "x": 4,
-        "y": 8,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 5420709352354726,
+      "id": 8889541580971599,
       "definition": {
         "type": "note",
-        "content": "***Section C*** — Authentication domain\nAuth outcomes (success/failure) and latency.\nFilters: env/cluster/service/version.",
-        "background_color": "blue",
+        "content": "## Web-Frontend Service Health",
+        "background_color": "vivid_blue",
         "font_size": "14",
         "text_align": "left",
-        "show_tick": true
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left",
+        "has_padding": true
       },
       "layout": {
-        "x": 8,
-        "y": 8,
-        "width": 4,
+        "x": 6,
+        "y": 12,
+        "width": 6,
+        "height": 1
+      }
+    },
+    {
+      "id": 3003127923949258,
+      "definition": {
+        "title": "",
+        "type": "manage_status",
+        "display_format": "countsAndList",
+        "color_preference": "text",
+        "hide_zero_counts": true,
+        "show_status": true,
+        "last_triggered_format": "relative",
+        "query": "",
+        "sort": "status,asc",
+        "count": 50,
+        "start": 0,
+        "summary_type": "monitors",
+        "show_priority": false,
+        "show_last_triggered": false
+      },
+      "layout": {
+        "x": 0,
+        "y": 13,
+        "width": 3,
+        "height": 5
+      }
+    },
+    {
+      "id": 7273415503392842,
+      "definition": {
+        "title": "Alert: Error rate is above 15%",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "alert_graph",
+        "alert_id": "97429457",
+        "viz_type": "timeseries"
+      },
+      "layout": {
+        "x": 3,
+        "y": 13,
+        "width": 3,
         "height": 2
       }
     },
     {
-      "id": 6033387144135756,
+      "id": 7865582204520879,
       "definition": {
-        "title": "Authentication outcomes by reason (failures)",
+        "title": "Web-frontend Service",
+        "type": "trace_service",
+        "env": "$env",
+        "service": "web-frontend",
+        "span_name": "fastapi.request",
+        "show_hits": true,
+        "show_errors": true,
+        "show_latency": true,
+        "show_breakdown": true,
+        "show_distribution": true,
+        "show_resource_list": false,
+        "size_format": "medium",
+        "display_format": "two_column"
+      },
+      "layout": {
+        "x": 6,
+        "y": 13,
+        "width": 6,
+        "height": 6
+      }
+    },
+    {
+      "id": 2020008999764016,
+      "definition": {
+        "title": "",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "slo_summary",
         "requests": [
           {
-            "queries": [
-              {
-                "name": "query1",
-                "data_source": "metrics",
-                "query": "sum:auth.failed{$env, $service} by {reason}.as_count()",
-                "aggregator": "sum"
-              }
-            ],
-            "response_format": "scalar",
-            "style": {
-              "palette": "datadog16"
-            },
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "sort": {
-              "order_by": [
-                {
-                  "type": "formula",
-                  "index": 0,
-                  "order": "desc"
-                }
-              ]
+            "request_type": "slo_summary",
+            "query": {
+              "query_string": "team:dev"
             }
-          }
-        ],
-        "type": "sunburst",
-        "legend": {
-          "type": "automatic"
-        }
-      },
-      "layout": {
-        "x": 0,
-        "y": 10,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 7444345585578279,
-      "definition": {
-        "title": "Authentication outcomes by reason (failures)",
-        "show_legend": false,
-        "type": "timeseries",
-        "requests": [
-          {
-            "formulas": [
-              {
-                "style": {
-                  "palette": "classic",
-                  "palette_index": 3
-                },
-                "alias": "unknown device",
-                "formula": "query1"
-              },
-              {
-                "style": {
-                  "palette": "warm",
-                  "palette_index": 4
-                },
-                "alias": "incorrect password",
-                "formula": "query2"
-              },
-              {
-                "style": {
-                  "palette": "green",
-                  "palette_index": 7
-                },
-                "alias": "incorrect username",
-                "formula": "query3"
-              },
-              {
-                "alias": "Total Auth Failed",
-                "formula": "query1 + query2 + query3"
-              }
-            ],
-            "queries": [
-              {
-                "name": "query1",
-                "data_source": "metrics",
-                "query": "sum:auth.failed{$env, reason:unknown_device}.as_count()"
-              },
-              {
-                "name": "query2",
-                "data_source": "metrics",
-                "query": "sum:auth.failed{$env, reason:incorrect_password}.as_count()"
-              },
-              {
-                "name": "query3",
-                "data_source": "metrics",
-                "query": "sum:auth.failed{$env, reason:incorrect_username}.as_count()"
-              }
-            ],
-            "response_format": "timeseries",
-            "style": {
-              "palette": "datadog16",
-              "order_by": "values",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          }
-        ]
-      },
-      "layout": {
-        "x": 4,
-        "y": 10,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 4084048139979910,
-      "definition": {
-        "type": "note",
-        "content": "***Section D*** — Kubernetes / Infrastructure\nCPU, memory, network, and restarts per pod.\nMetric names may vary by integration; adjust container/kubernetes metric names if needed.\nFilters: env/cluster/service/version.",
-        "background_color": "blue",
-        "font_size": "14",
-        "text_align": "left",
-        "show_tick": true
-      },
-      "layout": {
-        "x": 8,
-        "y": 10,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 6704744065989026,
-      "definition": {
-        "title": "CPU usage per pod (avg/min/max)",
-        "show_legend": true,
-        "legend_layout": "auto",
-        "type": "timeseries",
-        "requests": [
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "avg:container.cpu.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"
-              }
-            ],
-            "display_type": "line"
-          },
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "min:container.cpu.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"
-              }
-            ],
-            "display_type": "line"
-          },
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "max:container.cpu.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"
-              }
-            ],
-            "display_type": "line"
-          }
-        ]
-      },
-      "layout": {
-        "x": 0,
-        "y": 12,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 6188254508176673,
-      "definition": {
-        "title": "CPU user load (%) (avg/min/max)",
-        "show_legend": true,
-        "legend_layout": "auto",
-        "legend_columns": [
-          "avg",
-          "min",
-          "max",
-          "value",
-          "sum"
-        ],
-        "type": "timeseries",
-        "requests": [
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "avg:container.cpu.user{env:$env,kube_cluster_name:$cluster} by {host}"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          },
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "min:container.cpu.system{env:$env,kube_cluster_name:$cluster} by {host}"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          },
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "max:kubernetes.cpu.user.total{env:$env,kube_cluster_name:$cluster} by {host}"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          }
-        ]
-      },
-      "layout": {
-        "x": 4,
-        "y": 12,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 7928395158781325,
-      "definition": {
-        "title": "Memory usage per pod (avg/min/max)",
-        "show_legend": true,
-        "legend_layout": "auto",
-        "type": "timeseries",
-        "requests": [
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "avg:container.memory.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"
-              }
-            ],
-            "display_type": "line"
-          },
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "min:container.memory.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"
-              }
-            ],
-            "display_type": "line"
-          },
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "max:container.memory.usage{env:$env,kube_cluster_name:$cluster,kube_namespace:dd-demo,service:$service,version:$version} by {pod_name}"
-              }
-            ],
-            "display_type": "line"
-          }
-        ]
-      },
-      "layout": {
-        "x": 8,
-        "y": 12,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 19625198724067,
-      "definition": {
-        "title": "Network in/out (bytes)",
-        "show_legend": true,
-        "legend_layout": "auto",
-        "legend_columns": [
-          "avg",
-          "min",
-          "max",
-          "value",
-          "sum"
-        ],
-        "type": "timeseries",
-        "requests": [
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:kubernetes.network.rx_bytes{*} by {pod_name}"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          },
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:kubernetes.network.tx_bytes{*} by {pod_name}"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          }
-        ]
-      },
-      "layout": {
-        "x": 0,
-        "y": 14,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 5734112442720849,
-      "definition": {
-        "title": "Traffic sent vs received (overlay)",
-        "show_legend": true,
-        "legend_layout": "auto",
-        "legend_columns": [
-          "avg",
-          "min",
-          "max",
-          "value",
-          "sum"
-        ],
-        "type": "timeseries",
-        "requests": [
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:system.net.bytes_sent{$env, $cluster} by {cluster_name}"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          },
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:system.net.bytes_rcvd{*}"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          }
-        ]
-      },
-      "layout": {
-        "x": 4,
-        "y": 14,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 2101423960568046,
-      "definition": {
-        "title": "Container restarts (per pod)",
-        "type": "bar_chart",
-        "requests": [
-          {
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:kubernetes.containers.restarts{$cluster} by {pod_name,service}",
-                "aggregator": "avg"
-              }
-            ],
-            "response_format": "scalar",
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "sort": {
-              "count": 10,
-              "order_by": [
-                {
-                  "type": "formula",
-                  "index": 0,
-                  "order": "desc"
-                }
-              ]
-            }
-          }
-        ],
-        "style": {
-          "display": {
-            "type": "stacked",
-            "legend": "automatic"
-          }
-        }
-      },
-      "layout": {
-        "x": 8,
-        "y": 14,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 6990312598585616,
-      "definition": {
-        "type": "note",
-        "content": "***Section E*** — Frontend / RUM\nRUM views/actions/errors and (optional) Web Vitals.\nFilters: env/service/version.",
-        "background_color": "blue",
-        "font_size": "14",
-        "text_align": "left",
-        "show_tick": true
-      },
-      "layout": {
-        "x": 0,
-        "y": 16,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 5546296784771203,
-      "definition": {
-        "title": "RUM views (count)",
-        "show_legend": true,
-        "legend_layout": "auto",
-        "legend_columns": [
-          "avg",
-          "min",
-          "max",
-          "value",
-          "sum"
-        ],
-        "type": "timeseries",
-        "requests": [
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:rum.measure.view{$service, service:web-frontend}.as_count()"
-              }
-            ],
-            "formulas": [
-              {
-                "alias": "RUM view counts",
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          }
-        ]
-      },
-      "layout": {
-        "x": 4,
-        "y": 16,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 338754496475560,
-      "definition": {
-        "title": "RUM actions (count)",
-        "show_legend": true,
-        "legend_layout": "auto",
-        "legend_columns": [
-          "avg",
-          "min",
-          "max",
-          "value",
-          "sum"
-        ],
-        "type": "timeseries",
-        "requests": [
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:rum.measure.session.action{env:$env,service:web-frontend,version:$version}.as_count()"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          }
-        ]
-      },
-      "layout": {
-        "x": 8,
-        "y": 16,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 4510310728572019,
-      "definition": {
-        "title": "RUM errors (count)",
-        "show_legend": true,
-        "legend_layout": "auto",
-        "legend_columns": [
-          "avg",
-          "min",
-          "max",
-          "value",
-          "sum"
-        ],
-        "type": "timeseries",
-        "requests": [
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:rum.measure.error{env:$env,service:web-frontend,version:$version}.as_count()"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
           }
         ]
       },
       "layout": {
         "x": 0,
         "y": 18,
-        "width": 4,
+        "width": 5,
         "height": 2
       }
     },
@@ -1335,163 +687,2887 @@
       "id": 4000669115695428,
       "definition": {
         "type": "note",
-        "content": "***Section F*** — AI / LLM Observability\nLLM request volume/errors/latency. Adjust metric names to your implementation (or replace with log-based metrics / spans).\nFilters: env/service/version.",
-        "background_color": "blue",
+        "content": "## LLM and Auth Services Health Summary",
+        "background_color": "vivid_blue",
         "font_size": "14",
         "text_align": "left",
         "show_tick": true
       },
       "layout": {
-        "x": 4,
-        "y": 18,
-        "width": 4,
-        "height": 2
+        "x": 0,
+        "y": 20,
+        "width": 12,
+        "height": 1
       }
     },
     {
-      "id": 5899717296926980,
+      "id": 8869666586121263,
       "definition": {
-        "title": "LLM requests OK vs error",
-        "show_legend": true,
-        "legend_layout": "auto",
-        "legend_columns": [
-          "avg",
-          "min",
-          "max",
-          "value",
-          "sum"
-        ],
-        "type": "timeseries",
-        "requests": [
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:llm.request.ok{env:$env,service:llm-service,version:$version}"
-              }
-            ],
-            "formulas": [
-              {
-                "alias": "llm ok",
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          },
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:llm.request.error{env:$env,service:llm-service,version:$version}"
-              }
-            ],
-            "formulas": [
-              {
-                "alias": "as llm error",
-                "formula": "query1"
-              }
-            ],
-            "style": {
-              "palette": "dog_classic",
-              "line_type": "solid",
-              "line_width": "normal"
-            },
-            "display_type": "line"
-          }
-        ]
-      },
-      "layout": {
-        "x": 8,
-        "y": 18,
-        "width": 4,
-        "height": 2
-      }
-    },
-    {
-      "id": 7275306114220550,
-      "definition": {
-        "title": "LLM error rate (%)",
-        "type": "query_value",
-        "requests": [
-          {
-            "response_format": "scalar",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "sum:llm.request.error{env:$env,service:llm-service,version:$version}",
-                "aggregator": "avg"
-              },
-              {
-                "data_source": "metrics",
-                "name": "query2",
-                "query": "sum:llm.request.ok{env:$env,service:llm-service,version:$version}",
-                "aggregator": "avg"
-              }
-            ],
-            "formulas": [
-              {
-                "formula": "100 * (query1 / (query2 + query1))"
-              }
-            ]
-          }
-        ],
-        "autoscale": true,
-        "precision": 2
+        "title": "LLM Service Health",
+        "type": "trace_service",
+        "env": "$env",
+        "service": "llm-service",
+        "span_name": "fastapi.request",
+        "show_hits": true,
+        "show_errors": true,
+        "show_latency": true,
+        "show_breakdown": true,
+        "show_distribution": true,
+        "show_resource_list": false,
+        "size_format": "medium",
+        "display_format": "two_column"
       },
       "layout": {
         "x": 0,
-        "y": 20,
-        "width": 4,
-        "height": 2
+        "y": 21,
+        "width": 6,
+        "height": 6
       }
     },
     {
-      "id": 6977462522992193,
+      "id": 6378029475488004,
       "definition": {
-        "title": "LLM latency (p50/p95 ms) (dummy metric)",
-        "show_legend": true,
-        "legend_layout": "auto",
-        "type": "timeseries",
+        "title": "Auth-service Health",
+        "type": "trace_service",
+        "env": "$env",
+        "service": "auth-service",
+        "span_name": "fastapi.request",
+        "show_hits": true,
+        "show_errors": true,
+        "show_latency": true,
+        "show_breakdown": true,
+        "show_distribution": true,
+        "show_resource_list": false,
+        "size_format": "medium",
+        "display_format": "two_column"
+      },
+      "layout": {
+        "x": 6,
+        "y": 21,
+        "width": 6,
+        "height": 6
+      }
+    },
+    {
+      "id": 5956261415650716,
+      "definition": {
+        "type": "note",
+        "content": "## Infrastructure & Network Summary",
+        "background_color": "vivid_blue",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left",
+        "has_padding": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 27,
+        "width": 12,
+        "height": 1
+      }
+    },
+    {
+      "id": 117387258830031,
+      "definition": {
+        "title": "Host Map",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "hostmap",
+        "requests": {
+          "fill": {
+            "q": "avg:system.cpu.user{$env,$cluster} by {host}"
+          }
+        },
+        "node_type": "host",
+        "no_metric_hosts": true,
+        "no_group_hosts": true,
+        "group": [],
+        "scope": [
+          "$env",
+          "$cluster"
+        ],
+        "style": {
+          "palette": "green_to_orange",
+          "palette_flip": false
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 28,
+        "width": 4,
+        "height": 4
+      }
+    },
+    {
+      "id": 6230713278790090,
+      "definition": {
+        "title": "Front end Map",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "topology_map",
         "requests": [
           {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "p50:llm.latency_ms{env:$env,service:llm-service,version:$version}"
-              }
-            ],
-            "display_type": "line"
-          },
-          {
-            "response_format": "timeseries",
-            "queries": [
-              {
-                "data_source": "metrics",
-                "name": "query1",
-                "query": "p95:llm.latency_ms{env:$env,service:llm-service,version:$version}"
-              }
-            ],
-            "display_type": "line"
+            "request_type": "topology",
+            "query": {
+              "data_source": "service_map",
+              "service": "web-frontend",
+              "filters": [
+                "env:dev"
+              ],
+              "query_string": "service:(web-frontend)"
+            }
           }
         ]
       },
       "layout": {
         "x": 4,
-        "y": 20,
-        "width": 4,
-        "height": 2
+        "y": 28,
+        "width": 5,
+        "height": 4
+      }
+    },
+    {
+      "id": 6454296144931192,
+      "definition": {
+        "title": "Payment Service Topology",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "topology_map",
+        "requests": [
+          {
+            "request_type": "topology",
+            "query": {
+              "data_source": "service_map",
+              "service": "payment-service",
+              "filters": [
+                "env:dev"
+              ],
+              "query_string": "service:(payment-service)"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 9,
+        "y": 28,
+        "width": 3,
+        "height": 4
+      }
+    },
+    {
+      "id": 534513296321500,
+      "definition": {
+        "title": "Hosts Overview",
+        "background_color": "pink",
+        "show_title": true,
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 5212378174103287,
+            "definition": {
+              "title": "System uptime",
+              "type": "query_value",
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "avg:system.uptime{*}",
+                      "aggregator": "last"
+                    }
+                  ]
+                }
+              ],
+              "autoscale": true,
+              "precision": 1
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 2,
+              "height": 2
+            }
+          },
+          {
+            "id": 6507961151222737,
+            "definition": {
+              "title": "Amount of free and used disk space per device",
+              "type": "query_table",
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "avg:system.disk.free{*} by {device}",
+                      "aggregator": "last"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "query2",
+                      "query": "avg:system.disk.used{*} by {device}",
+                      "aggregator": "last"
+                    }
+                  ],
+                  "sort": {
+                    "count": 50,
+                    "order_by": [
+                      {
+                        "type": "formula",
+                        "index": 0,
+                        "order": "desc"
+                      }
+                    ]
+                  },
+                  "formulas": [
+                    {
+                      "formula": "query1",
+                      "alias": "Free disk space"
+                    },
+                    {
+                      "formula": "query2",
+                      "alias": "Used disk space"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 2,
+              "y": 0,
+              "width": 4,
+              "height": 4
+            }
+          },
+          {
+            "id": 6754506705129202,
+            "definition": {
+              "title": "CPU usage breakdown (%)",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "% time the CPU spent in an idle state",
+                      "formula": "query1"
+                    },
+                    {
+                      "alias": "% time the CPU spent running the kernel",
+                      "formula": "query2"
+                    },
+                    {
+                      "alias": "% time the CPU spent waiting for IO operations to complete",
+                      "formula": "query3"
+                    },
+                    {
+                      "alias": "% time the CPU spent running user space processes",
+                      "formula": "query4"
+                    },
+                    {
+                      "alias": "% time the virtual CPU spent waiting for the hypervisor to service another virtual CPU",
+                      "formula": "query5"
+                    },
+                    {
+                      "alias": "% time the CPU spent running the virtual processor",
+                      "formula": "query6"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "avg:system.cpu.idle{*}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    },
+                    {
+                      "query": "avg:system.cpu.system{*}",
+                      "data_source": "metrics",
+                      "name": "query2"
+                    },
+                    {
+                      "query": "avg:system.cpu.iowait{*}",
+                      "data_source": "metrics",
+                      "name": "query3"
+                    },
+                    {
+                      "query": "avg:system.cpu.user{*}",
+                      "data_source": "metrics",
+                      "name": "query4"
+                    },
+                    {
+                      "query": "avg:system.cpu.stolen{*}",
+                      "data_source": "metrics",
+                      "name": "query5"
+                    },
+                    {
+                      "query": "avg:system.cpu.guest{*}",
+                      "data_source": "metrics",
+                      "name": "query6"
+                    }
+                  ],
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              }
+            },
+            "layout": {
+              "x": 6,
+              "y": 0,
+              "width": 6,
+              "height": 2
+            }
+          },
+          {
+            "id": 2304758130138513,
+            "definition": {
+              "title": "Number of times the Agent was started",
+              "type": "query_value",
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "sum:datadog.agent.started{*}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ]
+                }
+              ],
+              "autoscale": true,
+              "custom_unit": "",
+              "precision": 2
+            },
+            "layout": {
+              "x": 0,
+              "y": 2,
+              "width": 2,
+              "height": 2
+            }
+          },
+          {
+            "id": 6669213691089280,
+            "definition": {
+              "title": "RAM  breakdown",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query2",
+                      "alias": "RAM total"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "on_right_yaxis": false,
+                  "queries": [
+                    {
+                      "query": "sum:system.mem.total{*}",
+                      "data_source": "metrics",
+                      "name": "query2"
+                    }
+                  ],
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                },
+                {
+                  "formulas": [
+                    {
+                      "formula": "query0",
+                      "alias": "RAM used"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "on_right_yaxis": false,
+                  "queries": [
+                    {
+                      "query": "sum:system.mem.used{*}",
+                      "data_source": "metrics",
+                      "name": "query0"
+                    }
+                  ],
+                  "style": {
+                    "palette": "purple",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            },
+            "layout": {
+              "x": 6,
+              "y": 2,
+              "width": 6,
+              "height": 2
+            }
+          },
+          {
+            "id": 285548703127922,
+            "definition": {
+              "title": "Network traffic (bytes per sec)",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "Network bytes received",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "sum:system.net.bytes_rcvd{*}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                },
+                {
+                  "formulas": [
+                    {
+                      "alias": "Network bytes sent",
+                      "formula": "0 - query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "sum:system.net.bytes_sent{*}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              }
+            },
+            "layout": {
+              "x": 0,
+              "y": 4,
+              "width": 4,
+              "height": 2
+            }
+          },
+          {
+            "id": 723434229706681,
+            "definition": {
+              "title": "Available Swap",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "% of swap free",
+                      "formula": "query1 * 100"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "avg:system.swap.pct_free{*}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "grey",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              }
+            },
+            "layout": {
+              "x": 4,
+              "y": 4,
+              "width": 4,
+              "height": 2
+            }
+          },
+          {
+            "id": 8250404504331714,
+            "definition": {
+              "title": "Current Agent NTP offset",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "Agent NTP offset",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "avg:ntp.offset{*}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": [
+                {
+                  "label": " Offset +1s ",
+                  "value": "0 < y < 1",
+                  "display_type": "ok dashed"
+                },
+                {
+                  "value": "1 < y < 3",
+                  "display_type": "warning dashed"
+                },
+                {
+                  "label": " Offset +3s ",
+                  "value": "y > 3",
+                  "display_type": "error dashed"
+                },
+                {
+                  "label": " Offset -1s ",
+                  "value": "-1 < y < 0",
+                  "display_type": "ok dashed"
+                },
+                {
+                  "value": "-3 < y < -1",
+                  "display_type": "warning dashed"
+                },
+                {
+                  "label": " Offset -3s ",
+                  "value": "y < -3",
+                  "display_type": "error dashed"
+                }
+              ]
+            },
+            "layout": {
+              "x": 8,
+              "y": 4,
+              "width": 4,
+              "height": 2
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 32,
+        "width": 12,
+        "height": 7
+      }
+    },
+    {
+      "id": 5641058724533909,
+      "definition": {
+        "title": "System Network",
+        "background_color": "white",
+        "show_title": true,
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 8625317533189560,
+            "definition": {
+              "title": "Average number of bytes received per device per second",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "Bytes received per second",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "avg:system.net.bytes_rcvd{*} by {device}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              }
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "id": 5986279365239166,
+            "definition": {
+              "title": "Packets of data received per interface",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "Packets of data received",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "avg:system.net.packets_in.count{*} by {device}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              }
+            },
+            "layout": {
+              "x": 4,
+              "y": 0,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "id": 7840587897397075,
+            "definition": {
+              "title": "Packet receive errors detected by the device driver",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "Packet receive errors detected",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "avg:system.net.packets_in.error{*} by {device}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              }
+            },
+            "layout": {
+              "x": 8,
+              "y": 0,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "id": 7331065335785231,
+            "definition": {
+              "title": "Average number of bytes sent per device per second",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "Bytes sent per second",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "avg:system.net.bytes_sent{*} by {device}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              }
+            },
+            "layout": {
+              "x": 0,
+              "y": 3,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "id": 830743417049026,
+            "definition": {
+              "title": "Packets of data transmitted per interface",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "Packets of data transmitted",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "avg:system.net.packets_out.count{*} by {device}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              }
+            },
+            "layout": {
+              "x": 4,
+              "y": 3,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "id": 4887204955021953,
+            "definition": {
+              "title": "Packet transmit errors detected by the device driver",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "Packet transmit errors detected",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "avg:system.net.packets_out.error{*} by {device}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              }
+            },
+            "layout": {
+              "x": 8,
+              "y": 3,
+              "width": 4,
+              "height": 3
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 39,
+        "width": 12,
+        "height": 7
+      }
+    },
+    {
+      "id": 4668093920234798,
+      "definition": {
+        "title": "Resource Utilization for * cluster",
+        "background_color": "gray",
+        "show_title": true,
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 6217874337953806,
+            "definition": {
+              "type": "note",
+              "content": "This group tracks resource metrics at the node and pod level. See more Kubernetes metrics on our [Kubernetes Overview dashboard](https://app.datadoghq.com/screen/integration/86/kubernetes-overview?from_ts=1647536695024&to_ts=1647540295024&live=true). \n",
+              "background_color": "transparent",
+              "font_size": "14",
+              "text_align": "left",
+              "vertical_align": "top",
+              "show_tick": false,
+              "tick_pos": "50%",
+              "tick_edge": "left",
+              "has_padding": true
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 12,
+              "height": 1
+            }
+          },
+          {
+            "id": 1038735179226365,
+            "definition": {
+              "title": "CPU utilization per node",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "hostmap",
+              "requests": {
+                "fill": {
+                  "q": "sum:kubernetes.cpu.usage.total{*} by {host}"
+                }
+              },
+              "no_metric_hosts": false,
+              "no_group_hosts": true,
+              "group": [],
+              "scope": [
+                "*",
+                "*"
+              ],
+              "style": {
+                "palette": "YlOrRd",
+                "palette_flip": false
+              }
+            },
+            "layout": {
+              "x": 0,
+              "y": 1,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "id": 6818063470994444,
+            "definition": {
+              "title": "Memory usage per node",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "hostmap",
+              "requests": {
+                "fill": {
+                  "q": "sum:kubernetes.memory.usage{*} by {host}"
+                }
+              },
+              "no_metric_hosts": false,
+              "no_group_hosts": true,
+              "group": [],
+              "scope": [
+                "*",
+                "*"
+              ],
+              "style": {
+                "palette": "hostmap_blues",
+                "palette_flip": false
+              }
+            },
+            "layout": {
+              "x": 6,
+              "y": 1,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "id": 5354823777831762,
+            "definition": {
+              "title": "Sum Kubernetes CPU requests per node",
+              "title_size": "16",
+              "title_align": "left",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes.cpu.requests{*} by {host}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "warm"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "custom_links": []
+            },
+            "layout": {
+              "x": 0,
+              "y": 4,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "id": 5714689118395486,
+            "definition": {
+              "title": "Sum Kubernetes memory requests per node",
+              "title_size": "16",
+              "title_align": "left",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes.memory.requests{*} by {host}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "cool"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "custom_links": []
+            },
+            "layout": {
+              "x": 6,
+              "y": 4,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "id": 106863321730562,
+            "definition": {
+              "title": "Most CPU-intensive pods",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "toplist",
+              "requests": [
+                {
+                  "style": {
+                    "palette": "warm"
+                  },
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes.cpu.usage.total{!pod_name:no_pod} by {pod_name}",
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "sort": {
+                    "count": 50,
+                    "order_by": [
+                      {
+                        "type": "formula",
+                        "index": 0,
+                        "order": "desc"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "custom_links": []
+            },
+            "layout": {
+              "x": 0,
+              "y": 7,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "id": 5015830513007962,
+            "definition": {
+              "title": "Most memory-intensive pods",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "toplist",
+              "requests": [
+                {
+                  "style": {
+                    "palette": "cool"
+                  },
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes.memory.usage{!pod_name:no_pod} by {pod_name}",
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "sort": {
+                    "count": 50,
+                    "order_by": [
+                      {
+                        "type": "formula",
+                        "index": 0,
+                        "order": "desc"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "custom_links": []
+            },
+            "layout": {
+              "x": 6,
+              "y": 7,
+              "width": 6,
+              "height": 3
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 46,
+        "width": 12,
+        "height": 11
+      }
+    },
+    {
+      "id": 8061094772371455,
+      "definition": {
+        "title": "Pods Overview ",
+        "title_align": "center",
+        "background_color": "green",
+        "show_title": true,
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 8515672814146319,
+            "definition": {
+              "type": "note",
+              "content": "For more pod-level metrics, see our [Kubernetes \nPods Overview dashboard](https://app.datadoghq.com/dash/integration/30322/kubernetes-pods-overview?from_ts=1647536694082&to_ts=1647540294082&live=true).",
+              "background_color": "transparent",
+              "font_size": "14",
+              "text_align": "left",
+              "vertical_align": "top",
+              "show_tick": false,
+              "tick_pos": "50%",
+              "tick_edge": "left",
+              "has_padding": true
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 8,
+              "height": 1
+            }
+          },
+          {
+            "id": 8799057937072739,
+            "definition": {
+              "title": "Pods in Bad Phase by Namespaces",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "toplist",
+              "requests": [
+                {
+                  "conditional_formats": [
+                    {
+                      "comparator": ">",
+                      "palette": "white_on_green",
+                      "value": 0
+                    }
+                  ],
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes_state.pod.status_phase{!pod_phase:running,!pod_phase:succeeded} by {pod_phase,kube_namespace}",
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "aggregator": "last"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "sort": {
+                    "count": 50,
+                    "order_by": [
+                      {
+                        "type": "formula",
+                        "index": 0,
+                        "order": "desc"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "layout": {
+              "x": 8,
+              "y": 0,
+              "width": 4,
+              "height": 5
+            }
+          },
+          {
+            "id": 5639678239051094,
+            "definition": {
+              "title": "Pods Running",
+              "title_size": "16",
+              "title_align": "left",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "Pods Running",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "on_right_yaxis": false,
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes.pods.running{*}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "green",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            },
+            "layout": {
+              "x": 0,
+              "y": 1,
+              "width": 4,
+              "height": 2
+            }
+          },
+          {
+            "id": 8794820250846049,
+            "definition": {
+              "title": "Pods Running (changed weekly)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "change",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "week_before(query1)"
+                    },
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "order_by": "change",
+                  "order_dir": "desc",
+                  "compare_to": "hour_before",
+                  "response_format": "scalar",
+                  "increase_good": true,
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes.pods.running{*} by {kube_namespace,kube_deployment}",
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "change_type": "absolute"
+                }
+              ]
+            },
+            "layout": {
+              "x": 4,
+              "y": 1,
+              "width": 4,
+              "height": 4
+            }
+          },
+          {
+            "id": 3510231919113376,
+            "definition": {
+              "title": "Pods running by Namespace",
+              "title_size": "16",
+              "title_align": "left",
+              "show_legend": true,
+              "legend_layout": "vertical",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "Pods Running",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes.pods.running{*} by {kube_cluster_name,kube_namespace}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            },
+            "layout": {
+              "x": 0,
+              "y": 3,
+              "width": 4,
+              "height": 2
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 57,
+        "width": 12,
+        "height": 6
+      }
+    },
+    {
+      "id": 4940773027499388,
+      "definition": {
+        "title": "Pods (kube_cluster_name:*, kube_namespace:*)",
+        "title_align": "center",
+        "background_color": "blue",
+        "show_title": true,
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 5560886635314567,
+            "definition": {
+              "type": "note",
+              "content": "For more pod-level metrics, see our [Kubernetes \nPods Overview dashboard](https://app.datadoghq.com/dash/integration/30322/kubernetes-pods-overview?from_ts=1647536694082&to_ts=1647540294082&live=true).",
+              "background_color": "transparent",
+              "font_size": "14",
+              "text_align": "left",
+              "vertical_align": "top",
+              "show_tick": false,
+              "tick_pos": "50%",
+              "tick_edge": "left",
+              "has_padding": true
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 6,
+              "height": 1
+            }
+          },
+          {
+            "id": 8960197327858666,
+            "definition": {
+              "title": "Pods Running By Namespace",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "toplist",
+              "requests": [
+                {
+                  "conditional_formats": [
+                    {
+                      "comparator": ">",
+                      "palette": "white_on_red",
+                      "value": 2000
+                    },
+                    {
+                      "comparator": ">",
+                      "palette": "white_on_yellow",
+                      "value": 1500
+                    },
+                    {
+                      "comparator": "<=",
+                      "palette": "white_on_green",
+                      "value": 3000
+                    }
+                  ],
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes.pods.running{*} by {kubernetes_cluster,kube_namespace}",
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "aggregator": "max"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "sort": {
+                    "count": 50,
+                    "order_by": [
+                      {
+                        "type": "formula",
+                        "index": 0,
+                        "order": "desc"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "custom_links": []
+            },
+            "layout": {
+              "x": 6,
+              "y": 0,
+              "width": 2,
+              "height": 4
+            }
+          },
+          {
+            "id": 2749820794067368,
+            "definition": {
+              "title": "Pods in Ready State By Node",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "toplist",
+              "requests": [
+                {
+                  "conditional_formats": [
+                    {
+                      "comparator": "<=",
+                      "palette": "white_on_green",
+                      "value": 24
+                    },
+                    {
+                      "comparator": ">",
+                      "palette": "white_on_red",
+                      "value": 32
+                    },
+                    {
+                      "comparator": ">",
+                      "palette": "white_on_yellow",
+                      "value": 24
+                    }
+                  ],
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes_state.pod.ready{condition:true} by {kubernetes_cluster,host,nodepool}",
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "aggregator": "last"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "sort": {
+                    "count": 50,
+                    "order_by": [
+                      {
+                        "type": "formula",
+                        "index": 0,
+                        "order": "desc"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "custom_links": []
+            },
+            "layout": {
+              "x": 8,
+              "y": 0,
+              "width": 2,
+              "height": 4
+            }
+          },
+          {
+            "id": 6022362456256266,
+            "definition": {
+              "title": "Pods in Bad State (Not Ready) by Namespace",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "toplist",
+              "requests": [
+                {
+                  "conditional_formats": [
+                    {
+                      "comparator": ">",
+                      "palette": "white_on_red",
+                      "value": 0
+                    },
+                    {
+                      "comparator": "<=",
+                      "palette": "white_on_green",
+                      "value": 0
+                    }
+                  ],
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes_state.pod.ready{condition:false} by {kube_namespace}",
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "aggregator": "last"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "exclude_null(query1)"
+                    }
+                  ],
+                  "sort": {
+                    "count": 50,
+                    "order_by": [
+                      {
+                        "type": "formula",
+                        "index": 0,
+                        "order": "desc"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "custom_links": []
+            },
+            "layout": {
+              "x": 10,
+              "y": 0,
+              "width": 2,
+              "height": 4
+            }
+          },
+          {
+            "id": 2596698223294823,
+            "definition": {
+              "title": "CPU-intensive pods",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "toplist",
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes.cpu.usage.total{*} by {pod_name}",
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "sort": {
+                    "count": 50,
+                    "order_by": [
+                      {
+                        "type": "formula",
+                        "index": 0,
+                        "order": "desc"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 1,
+              "width": 2,
+              "height": 3
+            }
+          },
+          {
+            "id": 6032920752164135,
+            "definition": {
+              "title": "CPU Usage by Pod",
+              "title_size": "16",
+              "title_align": "left",
+              "show_legend": true,
+              "legend_layout": "vertical",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "CPU Usage",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "on_right_yaxis": false,
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes.cpu.usage.total{*} by {pod_name}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            },
+            "layout": {
+              "x": 2,
+              "y": 1,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "id": 8983880929052065,
+            "definition": {
+              "title": "Memory-intensive pods",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "toplist",
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes.memory.usage{!pod_name:no_pod} by {pod_name}",
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "sort": {
+                    "count": 50,
+                    "order_by": [
+                      {
+                        "type": "formula",
+                        "index": 0,
+                        "order": "desc"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 4,
+              "width": 2,
+              "height": 3
+            }
+          },
+          {
+            "id": 5032320684388940,
+            "definition": {
+              "title": "Memory Usage by Pod",
+              "title_size": "16",
+              "title_align": "left",
+              "show_legend": true,
+              "legend_layout": "vertical",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "Memory Usage",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "on_right_yaxis": false,
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes.memory.usage{*} by {pod_name}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    }
+                  ],
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            },
+            "layout": {
+              "x": 2,
+              "y": 4,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "id": 5088229371103249,
+            "definition": {
+              "title": "Pods Status Phase",
+              "title_size": "16",
+              "title_align": "left",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "failed",
+                      "formula": "query1"
+                    },
+                    {
+                      "alias": "pending",
+                      "formula": "query2"
+                    },
+                    {
+                      "alias": "running",
+                      "formula": "query3"
+                    },
+                    {
+                      "alias": "succeeded",
+                      "formula": "query4"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "query": "sum:kubernetes_state.pod.status_phase{pod_phase:failed}",
+                      "data_source": "metrics",
+                      "name": "query1"
+                    },
+                    {
+                      "query": "sum:kubernetes_state.pod.status_phase{pod_phase:pending}",
+                      "data_source": "metrics",
+                      "name": "query2"
+                    },
+                    {
+                      "query": "sum:kubernetes_state.pod.status_phase{pod_phase:running}",
+                      "data_source": "metrics",
+                      "name": "query3"
+                    },
+                    {
+                      "query": "sum:kubernetes_state.pod.status_phase{pod_phase:succeeded}",
+                      "data_source": "metrics",
+                      "name": "query4"
+                    }
+                  ],
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            },
+            "layout": {
+              "x": 6,
+              "y": 4,
+              "width": 6,
+              "height": 3
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 63,
+        "width": 12,
+        "height": 8
+      }
+    },
+    {
+      "id": 1256694966219037,
+      "definition": {
+        "type": "note",
+        "content": "## RUM",
+        "background_color": "vivid_blue",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left",
+        "has_padding": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 12,
+        "height": 1,
+        "is_column_break": true
+      }
+    },
+    {
+      "id": 4234282422034454,
+      "definition": {
+        "title": "RUM Feature usage",
+        "background_color": "purple",
+        "show_title": true,
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 3778198122777391,
+            "definition": {
+              "title": "Usage by country",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "geomap",
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "search": {
+                        "query": ""
+                      },
+                      "data_source": "rum",
+                      "compute": {
+                        "aggregation": "count"
+                      },
+                      "name": "query1",
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": [
+                        {
+                          "facet": "@geo.country_iso_code",
+                          "sort": {
+                            "aggregation": "count",
+                            "order": "desc"
+                          },
+                          "limit": 10
+                        }
+                      ]
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "sort": {
+                    "count": 10,
+                    "order_by": [
+                      {
+                        "type": "formula",
+                        "index": 0,
+                        "order": "desc"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "style": {
+                "palette": "hostmap_blues",
+                "palette_flip": false
+              },
+              "view": {
+                "focus": "WORLD"
+              }
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 5,
+              "height": 4
+            }
+          },
+          {
+            "id": 3562497154312941,
+            "definition": {
+              "title": "Count of *",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "search": {
+                        "query": ""
+                      },
+                      "data_source": "rum",
+                      "compute": {
+                        "aggregation": "count"
+                      },
+                      "name": "query1",
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": []
+                    }
+                  ]
+                }
+              ],
+              "autoscale": true,
+              "precision": 2
+            },
+            "layout": {
+              "x": 5,
+              "y": 0,
+              "width": 2,
+              "height": 3
+            }
+          },
+          {
+            "id": 7886331900429102,
+            "definition": {
+              "title": "* over time (vs. week before)",
+              "title_size": "16",
+              "title_align": "left",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "this week",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "on_right_yaxis": false,
+                  "queries": [
+                    {
+                      "search": {
+                        "query": "@type:action"
+                      },
+                      "data_source": "rum",
+                      "compute": {
+                        "aggregation": "count"
+                      },
+                      "name": "query1",
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": []
+                    }
+                  ],
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                },
+                {
+                  "formulas": [
+                    {
+                      "alias": "past week",
+                      "formula": "calendar_shift(query0, '-1w', 'UTC')"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "on_right_yaxis": false,
+                  "queries": [
+                    {
+                      "search": {
+                        "query": "@type:action"
+                      },
+                      "data_source": "rum",
+                      "compute": {
+                        "aggregation": "count"
+                      },
+                      "name": "query0",
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": []
+                    }
+                  ],
+                  "style": {
+                    "palette": "grey",
+                    "line_type": "dotted",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            },
+            "layout": {
+              "x": 7,
+              "y": 0,
+              "width": 5,
+              "height": 3
+            }
+          },
+          {
+            "id": 7321566683384061,
+            "definition": {
+              "title": "Usage frequency (as percent of all * views)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "number_format": {
+                        "unit": {
+                          "label": "%",
+                          "type": "custom_unit_label"
+                        }
+                      },
+                      "formula": "(query2 / query3) * 100"
+                    }
+                  ],
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "name": "query2",
+                      "data_source": "rum",
+                      "search": {
+                        "query": "@type:resource login"
+                      },
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": [],
+                      "compute": {
+                        "aggregation": "cardinality",
+                        "metric": "@view.id"
+                      },
+                      "storage": "hot"
+                    },
+                    {
+                      "name": "query3",
+                      "data_source": "rum",
+                      "search": {
+                        "query": "@type:action"
+                      },
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": [],
+                      "compute": {
+                        "aggregation": "cardinality",
+                        "metric": "@view.id"
+                      },
+                      "storage": "hot"
+                    }
+                  ]
+                }
+              ],
+              "autoscale": false,
+              "precision": 2
+            },
+            "layout": {
+              "x": 5,
+              "y": 3,
+              "width": 2,
+              "height": 3
+            }
+          },
+          {
+            "id": 7446198640473383,
+            "definition": {
+              "title": "All actions on *",
+              "title_size": "16",
+              "title_align": "left",
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "search": {
+                        "query": ""
+                      },
+                      "data_source": "rum",
+                      "compute": {
+                        "metric": "@action.id",
+                        "aggregation": "cardinality"
+                      },
+                      "name": "query1",
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": [
+                        {
+                          "facet": "@action.name",
+                          "sort": {
+                            "metric": "@action.id",
+                            "aggregation": "cardinality",
+                            "order": "desc"
+                          },
+                          "limit": 10
+                        }
+                      ]
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "sort": {
+                    "order_by": [
+                      {
+                        "type": "formula",
+                        "index": 0,
+                        "order": "desc"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "type": "sunburst",
+              "legend": {
+                "type": "automatic"
+              }
+            },
+            "layout": {
+              "x": 7,
+              "y": 3,
+              "width": 5,
+              "height": 3
+            }
+          },
+          {
+            "id": 960182993536044,
+            "definition": {
+              "type": "note",
+              "content": "If this value is `100%`, check that there is an action name set. If the title of this group begins with `Feature Usage: *`, there is no action specified. Choose an action name to see what percentage of page visitors take this action. ",
+              "background_color": "purple",
+              "font_size": "14",
+              "text_align": "left",
+              "vertical_align": "center",
+              "show_tick": true,
+              "tick_pos": "50%",
+              "tick_edge": "right",
+              "has_padding": true
+            },
+            "layout": {
+              "x": 0,
+              "y": 4,
+              "width": 5,
+              "height": 2
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 1,
+        "width": 12,
+        "height": 7
+      }
+    },
+    {
+      "id": 7392708705301913,
+      "definition": {
+        "title": "RUM Page Errors",
+        "title_align": "left",
+        "background_color": "pink",
+        "show_title": true,
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 4752185878207593,
+            "definition": {
+              "title": "Error rate on *",
+              "title_size": "16",
+              "title_align": "left",
+              "show_legend": false,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "% views with errors",
+                      "formula": "(1 - (query5 - query7) / query5) * 100"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "on_right_yaxis": false,
+                  "queries": [
+                    {
+                      "search": {
+                        "query": "@type:view"
+                      },
+                      "data_source": "rum",
+                      "compute": {
+                        "interval": 1800000,
+                        "aggregation": "count"
+                      },
+                      "name": "query5",
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": []
+                    },
+                    {
+                      "search": {
+                        "query": "@type:view @view.error.count:>0"
+                      },
+                      "data_source": "rum",
+                      "compute": {
+                        "interval": 1800000,
+                        "aggregation": "count"
+                      },
+                      "name": "query7",
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": []
+                    }
+                  ],
+                  "style": {
+                    "palette": "red",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 4,
+              "height": 2
+            }
+          },
+          {
+            "id": 5335898238058754,
+            "definition": {
+              "title": "Code errors on *",
+              "title_size": "16",
+              "title_align": "left",
+              "show_legend": true,
+              "legend_layout": "horizontal",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "Last week code errors",
+                      "formula": "calendar_shift(query1, '-1w', 'UTC')"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "on_right_yaxis": false,
+                  "queries": [
+                    {
+                      "search": {
+                        "query": "@type:error -@error.source:network"
+                      },
+                      "data_source": "rum",
+                      "compute": {
+                        "aggregation": "count"
+                      },
+                      "name": "query1",
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": []
+                    }
+                  ],
+                  "style": {
+                    "palette": "grey",
+                    "line_type": "dotted",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                },
+                {
+                  "formulas": [
+                    {
+                      "alias": "Code errors",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "on_right_yaxis": false,
+                  "queries": [
+                    {
+                      "search": {
+                        "query": "@type:error -@error.source:network"
+                      },
+                      "data_source": "rum",
+                      "compute": {
+                        "aggregation": "count"
+                      },
+                      "name": "query1",
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": []
+                    }
+                  ],
+                  "style": {
+                    "palette": "red",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            },
+            "layout": {
+              "x": 4,
+              "y": 0,
+              "width": 4,
+              "height": 2
+            }
+          },
+          {
+            "id": 7629295129740475,
+            "definition": {
+              "title": "Network errors on *",
+              "title_size": "16",
+              "title_align": "left",
+              "show_legend": true,
+              "legend_layout": "horizontal",
+              "legend_columns": [
+                "avg",
+                "min",
+                "max",
+                "value",
+                "sum"
+              ],
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "alias": "Last week network errors",
+                      "formula": "calendar_shift(query2, '-1w', 'UTC')"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "on_right_yaxis": false,
+                  "queries": [
+                    {
+                      "search": {
+                        "query": "@resource.status_code:>=500"
+                      },
+                      "data_source": "rum",
+                      "compute": {
+                        "aggregation": "count"
+                      },
+                      "name": "query2",
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": []
+                    }
+                  ],
+                  "style": {
+                    "palette": "grey",
+                    "line_type": "dotted",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                },
+                {
+                  "formulas": [
+                    {
+                      "alias": "Network errors",
+                      "formula": "query1"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "on_right_yaxis": false,
+                  "queries": [
+                    {
+                      "search": {
+                        "query": "@resource.status_code:>=500"
+                      },
+                      "data_source": "rum",
+                      "compute": {
+                        "aggregation": "count"
+                      },
+                      "name": "query1",
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": []
+                    }
+                  ],
+                  "style": {
+                    "palette": "red",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "",
+                "min": "auto",
+                "max": "auto"
+              },
+              "markers": []
+            },
+            "layout": {
+              "x": 8,
+              "y": 0,
+              "width": 4,
+              "height": 2
+            }
+          },
+          {
+            "id": 3115215042308274,
+            "definition": {
+              "title": "Issues on *",
+              "title_size": "16",
+              "title_align": "left",
+              "requests": [
+                {
+                  "query": {
+                    "query_string": "",
+                    "data_source": "rum_issue_stream"
+                  },
+                  "columns": [
+                    {
+                      "field": "details",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "count",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "volume",
+                      "width": "auto"
+                    }
+                  ],
+                  "response_format": "event_list"
+                }
+              ],
+              "type": "list_stream"
+            },
+            "layout": {
+              "x": 0,
+              "y": 2,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "id": 3969420521329945,
+            "definition": {
+              "title": "Top actions triggering errors by number of impacted users",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_table",
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "search": {
+                        "query": "@type:action @action.error.count:>0"
+                      },
+                      "data_source": "rum",
+                      "compute": {
+                        "metric": "@session.id",
+                        "aggregation": "cardinality"
+                      },
+                      "name": "query1",
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": [
+                        {
+                          "facet": "@action.name",
+                          "sort": {
+                            "metric": "@session.id",
+                            "aggregation": "cardinality",
+                            "order": "desc"
+                          },
+                          "limit": 30
+                        },
+                        {
+                          "facet": "@view.url_path_group",
+                          "sort": {
+                            "metric": "@session.id",
+                            "aggregation": "cardinality",
+                            "order": "desc"
+                          },
+                          "limit": 30
+                        }
+                      ]
+                    },
+                    {
+                      "search": {
+                        "query": "@type:action @action.error.count:>0"
+                      },
+                      "data_source": "rum",
+                      "compute": {
+                        "metric": "@action.error.count",
+                        "aggregation": "avg"
+                      },
+                      "name": "query2",
+                      "indexes": [
+                        "*"
+                      ],
+                      "group_by": [
+                        {
+                          "facet": "@action.name",
+                          "sort": {
+                            "metric": "@action.error.count",
+                            "aggregation": "avg",
+                            "order": "desc"
+                          },
+                          "limit": 1000
+                        }
+                      ]
+                    }
+                  ],
+                  "sort": {
+                    "count": 900,
+                    "order_by": [
+                      {
+                        "type": "formula",
+                        "index": 0,
+                        "order": "desc"
+                      }
+                    ]
+                  },
+                  "formulas": [
+                    {
+                      "formula": "query1",
+                      "cell_display_mode": "bar"
+                    },
+                    {
+                      "formula": "query2",
+                      "cell_display_mode": "bar"
+                    }
+                  ]
+                }
+              ],
+              "has_search_bar": "never"
+            },
+            "layout": {
+              "x": 4,
+              "y": 2,
+              "width": 8,
+              "height": 3
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 8,
+        "width": 12,
+        "height": 6
       }
     }
   ],
